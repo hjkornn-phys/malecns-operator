@@ -20,7 +20,17 @@ PyTorch is optional and only worth it where it wins:
 - the cell-type-collapsed network (~11.7k², dense, fits in memory) on MPS;
 - anything needing gradients (fitting gains or weights).
 
-Benchmark CPU vs MPS before adopting torch for sparse neuron-level work.
+Measured here (8 GB M1, `scripts/bench_solve.py`, ms per iteration, 29 columns):
+
+| backend | baseline 10.5 M edges | OR 1% 5.5 M edges |
+|---|---|---|
+| SciPy CSR, CPU | 209 | 116 |
+| torch CSR, CPU | 119 | 63 |
+| torch CSR, MPS | unsupported | unsupported |
+| torch `index_add_`, MPS | 276 | 146 |
+
+Neuron level: torch CSR on CPU (identical to SciPy, 1.8x faster). MPS only for
+dense cell-type work.
 
 ## Pipeline
 
