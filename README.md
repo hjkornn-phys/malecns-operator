@@ -30,6 +30,10 @@ result is negative or undecidable, it is reported as such.
   [Step 2a-mix](#step-2a-mix-a-harder-task-and-it-decided-nothing)).
 - Generalisation to held-out neurons holds for single tastes and breaks for
   mixtures, where the real wiring is no better than shuffled wiring.
+- A dark patch reaches the giant fiber with the right size tuning, sidedness and
+  spatial pooling, but too weakly to clear the response threshold, and cannot
+  reach the jump muscle at all, because that synapse is electrical and this
+  connectome has none — [Step 4](#step-4-a-dark-patch-reaches-the-giant-fiber-and-stops-there).
 - `step2b_taste.py` trains the gains on the Step 2a task. Its rules are
   committed; its results are not in yet.
 
@@ -344,6 +348,56 @@ network's answer differs from the baseline's, paired over the same samples.
   a set of near-chance scores looks like when noise is the main signal; it is not
   evidence that pruning helps.
 
+## Step 4: a dark patch reaches the giant fiber, and stops there
+
+Rules were committed (`ec8b12e`) before the run. Read the docstring for what this
+does NOT test: not looming, because frames are solved independently and the model
+has no time axis; not movement, because there is no body.
+
+```sh
+uv run --project .. python ../scripts/step4_size.py --seeds=10   # ~3 min, 1.2 GB
+```
+
+A dark disc is grown over the right eye and drives `L2`, the OFF-pathway lamina
+output, on its 893 hex-addressed columns. Photoreceptors carry no hex coordinates
+in MaleCNS, so the retinotopy has to be taken from the columnar neurons.
+
+| stage at r = 18 (651 columns) | response |
+|---|---|
+| LC4 | 0.0477 |
+| LPLC2 | 0.0198 |
+| **DNp01 (giant fiber), stimulated side** | **0.0061** |
+| DNp01, opposite side | 0.0001 |
+| PSI | 0.0001 |
+| TTMn (jump muscle) | 0.0002 |
+| DLMn (wing) | 0.0001 |
+
+| rule | result |
+|---|---|
+| E1 command survives: DNp01 > 0.01 at r = 18 | **fail** (0.0061) |
+| E2 size tuned: Spearman(radius, DNp01) >= 0.9 | pass (1.000) |
+| E3 contiguity matters: disc beats all 10 scattered seeds at every r >= 6 | pass |
+| E4 reaches the muscle: TTMn and DLMn > 0.01 | **fail** (0.0002, 0.0001) |
+| E5 the wiring did it: baseline above every shuffled seed | pass (0.0061 vs 0.0044 max) |
+| E6 side is right: DNp01 ipsilateral > contralateral | pass (60x) |
+| **escape pathway carried** | **no** |
+
+- The pathway is real and behaves like itself. The response rises monotonically
+  with disc size, a contiguous disc beats a scattered stimulus of identical
+  neuron count at every size, and the side separation is 60-fold. Shuffled
+  wiring does not reproduce it, though one shuffled seed reached 0.0044.
+- It is also weak, and it dies at the giant fiber. LC4 is well above the 0.01
+  threshold; DNp01 is 1.6x below it; below DNp01 there is nothing left.
+- The reason is in the data, not the model. `DNp01 -> PSI` is **4 edges, 16
+  synapses** and `DNp01 -> TTMn` is **2 edges, 90 synapses**, against 36,733
+  synapses arriving at DNp01. In the fly those are **electrical** synapses, and
+  MaleCNS is a chemical-synapse connectome with no gap junctions. The escape
+  command physically cannot leave the giant fiber in this dataset.
+- Contiguity matters most when the disc is small (r = 6: 0.0016 vs 0.0012) and
+  almost not at all when it covers most of the eye (r = 18: 0.0061 vs 0.0057),
+  which is what pooling over neighbouring columns should look like.
+- The threshold was not revisited after the result was seen.
+
 ## Layout
 
 - `data/` — downloaded tables, caches, logs and result JSON; not committed.
@@ -357,6 +411,7 @@ network's answer differs from the baseline's, paired over the same samples.
 | model | `fpmodel.py` — the trainable rate model, imported by every step-1 and step-2 script |
 | step 1 | `step1_gradcheck.py`, `step1_recovery.py`, `step1_identify.py` |
 | step 2 | `step2a_taste.py`, `step2a_mix.py`, `step2b_taste.py` |
+| step 4 | `step4_size.py` |
 | viewer data | `viz_export.py` |
 
 ### Viewer data
