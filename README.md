@@ -398,6 +398,56 @@ in MaleCNS, so the retinotopy has to be taken from the columnar neurons.
   which is what pooling over neighbouring columns should look like.
 - The threshold was not revisited after the result was seen.
 
+## Step 5: the missing gap junctions were not the bottleneck
+
+Step 4 stopped at the giant fiber, and the obvious suspect was the connectome
+itself: in the fly, `DNp01 -> TTMn` and `DNp01 -> PSI` are ShakB-mediated
+rectifying **electrical** synapses alongside their chemical ones, and MaleCNS
+carries no gap junctions, so only the minor partner is in the data. This run puts
+the electrical component back as a **declared modification** and measures what it
+buys. Rules were committed (`e7015cd`) before the run.
+
+```sh
+uv run --project .. python ../scripts/step5_gapjunction.py --seeds=10   # ~14 min, 1.2 GB
+```
+
+No pairing is invented: the chemical edges already sit on those pairs, so the
+endpoints come from the data and only the strength is assumed. `kappa` is the
+share of the target's input budget the gap junction supplies, its other inputs
+giving way, so the iteration stays a contraction.
+
+| kappa | DNp01 | PSI | TTMn | DLMn |
+|---|---|---|---|---|
+| 0 | 0.0061 | 0.0001 | 0.0002 | 0.0001 |
+| 0.2 | 0.0061 | 0.0006 | 0.0012 | 0.0001 |
+| 0.4 | 0.0061 | 0.0011 | 0.0023 | 0.0001 |
+| 0.8 | 0.0061 | 0.0022 | 0.0044 | 0.0001 |
+
+| rule | result |
+|---|---|
+| G0 regression: kappa = 0 reproduces step 4 | pass (deviation 0.00e+00) |
+| G1 reaches the muscle: some kappa <= 0.4 puts TTMn and DLMn above 0.01 | **fail** |
+| **gap junctions were the bottleneck** | **no** |
+
+G2-G5 were not evaluated, since the rules make them conditional on G1.
+
+- The added synapse does exactly what it should: TTMn lands on `g * kappa *
+  DNp01` to three decimals at every kappa. The hypothesis was implemented
+  faithfully and still failed.
+- It fails because the bottleneck is upstream. DNp01 itself only reaches 0.0061,
+  and nothing downstream can exceed what arrives. Even at kappa = 0.8, an absurd
+  assumption where the gap junction supplies four fifths of the motor neuron's
+  entire drive, TTMn reaches 0.0044, under half the threshold.
+- DLMn never moves at all, at any kappa. It sits two hops out, behind a PSI that
+  is itself barely driven; `PSI -> DLMn` is chemical and fully present, so the
+  serial losses, not a missing edge, are what silence it.
+- So the honest answer to "is the connectome missing the escape pathway" is: not
+  in the way we guessed. What is missing is the **spike**. The real giant fiber
+  is an all-or-none amplifier, and a rate model with no threshold has no such
+  step — the same gap Result 1 already blamed for the Shiu task failures.
+- Reported as a failed hypothesis, not retuned. Raising kappa past 0.8 would only
+  be fitting the assumption to the wanted answer.
+
 ## Layout
 
 - `data/` — downloaded tables, caches, logs and result JSON; not committed.
@@ -412,6 +462,7 @@ in MaleCNS, so the retinotopy has to be taken from the columnar neurons.
 | step 1 | `step1_gradcheck.py`, `step1_recovery.py`, `step1_identify.py` |
 | step 2 | `step2a_taste.py`, `step2a_mix.py`, `step2b_taste.py` |
 | step 4 | `step4_size.py` |
+| step 5 | `step5_gapjunction.py` |
 | viewer data | `viz_export.py` |
 
 ### Viewer data
