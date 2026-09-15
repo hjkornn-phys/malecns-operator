@@ -3,6 +3,8 @@ name = "malecns-operator"
 version = "0.1.0"
 description = "Network-model work on the MaleCNS v1.0 connectome"
 requires-python = ">=3.13,<3.14"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = [
     "numpy",
     "openpyxl>=3.1.5",

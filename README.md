@@ -207,3 +207,11 @@ its start, every alpha within 0.01, s within 1%, b within 0.005.
 
 - `scripts/` — pipeline, task and training scripts; run from `data/`
 - `data/`    — downloaded tables, caches, logs and result JSON; not committed
+
+## License
+
+Code and documentation in this repository: MIT, see `LICENSE`.
+
+Data are not included; the scripts download them. MaleCNS v1.0 and the FlyWire
+annotations are CC-BY 4.0, and the Shiu et al. 2024 supplementary tables are
+used under their own terms. Cite those sources when you use the data.
