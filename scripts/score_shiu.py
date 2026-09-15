@@ -11,18 +11,18 @@ Rules, fixed before any result was seen:
 - ipsilateral: one-side LB3b+c stimulus; same-side MN9 responds less than opposite-side MN9.
 - bitter / Ir94e: adding the group to sugar lowers MN9's response by more than 20% (bitter yes, Ir94e no).
 - aBN2 has no MaleCNS match; its silencing task is skipped.
-Networks: baseline k>=3; OR 1% (compacted); random baseline edges of OR 1% size (control, seed 0).
-Run from data/ after retention.py and shiu_tasks.py.
+Networks: baseline k>=3; OR 1% (compacted); random baseline edges of OR 1% size (controls, seeds 0..N-1).
+Run from data/ after retention.py and shiu_tasks.py:  score_shiu.py [gains ...] [--seeds=N]
 """
 import json, sys, time
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 
-GAINS = [float(x) for x in sys.argv[1:]] or [0.9, 0.5]
+SEEDS = int(next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--seeds=")), 1))
+GAINS = [float(x) for x in sys.argv[1:] if not x.startswith("--")] or [0.9, 0.5]
 B, TOL, MAXIT, REQ = 0.1, 1e-6, 2000, 0.2
 THETA, THETAS = 1e-2, [1e-4, 1e-3, 1e-2, 1e-1]
-rng = np.random.default_rng(0)
 
 T = json.load(open("shiu_tasks.json"))
 ann = pd.read_parquet("annotations.parquet")
@@ -40,8 +40,10 @@ in_tot = np.bincount(post, weights=w, minlength=N)
 out_tot = np.bincount(pre, weights=w, minlength=N)
 k3 = w >= 3
 masks = {"baseline k>=3": k3, "OR 1%": k3 & ((w / in_tot[post] >= 0.01) | (w / out_tot[pre] >= 0.01))}
-m = np.zeros_like(k3); m[rng.choice(np.flatnonzero(k3), int(masks["OR 1%"].sum()), replace=False)] = True
-masks["random = OR 1% size"] = m
+for seed in range(SEEDS):                                  # seed 0 reproduces the single-control run
+    m = np.zeros_like(k3)
+    m[np.random.default_rng(seed).choice(np.flatnonzero(k3), int(masks["OR 1%"].sum()), replace=False)] = True
+    masks[f"random seed {seed}"] = m
 
 rows = lambda a: np.asarray(a, np.int64)
 S = {k: rows(v["rows"]) for k, v in T["stimuli"].items()}
@@ -145,25 +147,42 @@ for g in GAINS:
 
     print(f"\n=== g={g}, THETA={THETA}")
     names = list(masks)
+    shown = names[:3]                                      # baseline, OR 1%, random seed 0
     rows_ = []
     for i, p0 in enumerate(blk[names[0]]):
         r = {"task": p0["task"], "item": p0["item"], "truth": p0["truth"]}
         for nm in names: r[nm] = pred(blk[nm][i], THETA)
         rows_.append(r)
     df = pd.DataFrame(rows_)
-    summ = df.groupby("task").apply(lambda x: pd.Series({"n": len(x), **{nm: f"{(x[nm] == x.truth).sum()}/{len(x)}" for nm in names}}),
+    summ = df.groupby("task").apply(lambda x: pd.Series({"n": len(x), **{nm: f"{(x[nm] == x.truth).sum()}/{len(x)}" for nm in shown}}),
                                     include_groups=False)
     print(summ.to_string())
+    nontriv = ~(df.task.str.startswith("4") & ~df.truth)   # drop screen negatives, where every network says no
+    t = df.truth
+    stats = {}
     for nm in names:
-        c = (df[nm] == df.truth)
-        sez = df[df.task.str.startswith("4")]
-        tpr = ((sez[nm]) & sez.truth).sum() / max(sez.truth.sum(), 1)
-        tnr = ((~sez[nm]) & ~sez.truth).sum() / max((~sez.truth).sum(), 1)
-        agree = (df[nm] == df[names[0]]).mean()
-        sweep = {th: round(float(np.mean([pred(p, th) == p["truth"] for p in blk[nm]])), 3) for th in THETAS}
-        print(f"{nm:22s} overall {c.sum()}/{len(c)} = {c.mean():.3f} | screen TPR {tpr:.2f} TNR {tnr:.2f} "
-              f"| agrees with baseline {agree:.3f} | accuracy by THETA {sweep}")
-    for nm in names[1:]:
+        p = df[nm]
+        tpr, tnr = (p & t).sum() / t.sum(), (~p & ~t).sum() / (~t).sum()
+        stats[nm] = dict(accuracy=float((p == t).mean()), balanced=float((tpr + tnr) / 2),
+                         changed=int((p != df[names[0]]).sum()),
+                         agree_nontrivial=float((p[nontriv] == df[names[0]][nontriv]).mean()),
+                         by_theta={str(th): float(np.mean([pred(q, th) == q["truth"] for q in blk[nm]])) for th in THETAS})
+        s = stats[nm]
+        print(f"{nm:22s} acc {s['accuracy']:.3f} balanced {s['balanced']:.3f} | changed vs baseline {s['changed']:3d} "
+              f"| agreement excl. screen negatives {s['agree_nontrivial']:.3f}", flush=True)
+    rnd = [nm for nm in names if nm.startswith("random seed")]
+    agg = {k: {"mean": float(np.mean([stats[r][k] for r in rnd])), "sd": float(np.std([stats[r][k] for r in rnd], ddof=1)) if len(rnd) > 1 else 0.0,
+               "min": float(np.min([stats[r][k] for r in rnd])), "max": float(np.max([stats[r][k] for r in rnd]))}
+           for k in ["accuracy", "balanced", "changed", "agree_nontrivial"]}
+    c = stats["OR 1%"]["changed"]
+    agg["seeds"] = len(rnd)
+    agg["seeds_changing_no_more_than_OR1"] = int(sum(stats[r]["changed"] <= c for r in rnd))
+    out["results"][str(g)] = {"networks": blk, "stats": stats, "random_aggregate": agg}
+    json.dump(out, open("score_shiu.json", "w"), indent=1)
+    print(f"\nrandom controls, {len(rnd)} seeds: " + " | ".join(
+        f"{k} mean {v['mean']:.3f} sd {v['sd']:.3f} [{v['min']:.3f}, {v['max']:.3f}]" for k, v in agg.items() if isinstance(v, dict)))
+    print(f"OR 1% changed {c}; random seeds changing <= {c}: {agg['seeds_changing_no_more_than_OR1']}/{len(rnd)}")
+    for nm in shown[1:]:
         flips = df[df[nm] != df[names[0]]]
         print(f"\n{nm} vs baseline, {len(flips)} changed predictions:")
         if len(flips): print(flips[["task", "item", "truth", names[0], nm]].to_string(index=False))
