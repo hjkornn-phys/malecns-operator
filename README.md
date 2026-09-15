@@ -31,9 +31,12 @@ result is negative or undecidable, it is reported as such.
 - Generalisation to held-out neurons holds for single tastes and breaks for
   mixtures, where the real wiring is no better than shuffled wiring.
 - A dark patch reaches the giant fiber with the right size tuning, sidedness and
-  spatial pooling, but too weakly to clear the response threshold, and cannot
-  reach the jump muscle at all, because that synapse is electrical and this
-  connectome has none — [Step 4](#step-4-a-dark-patch-reaches-the-giant-fiber-and-stops-there).
+  spatial pooling, but too weakly to clear the response threshold, and never
+  reaches the jump muscle — [Step 4](#step-4-a-dark-patch-reaches-the-giant-fiber-and-stops-there).
+  The obvious culprit, the electrical synapses this connectome does not carry,
+  turned out not to be it: supplying them changes nothing, because the giant
+  fiber's own response is already too small and this rate model has no spike to
+  amplify it — [Step 5](#step-5-the-missing-gap-junctions-were-not-the-bottleneck).
 - `step2b_taste.py` trains the gains on the Step 2a task. Its rules are
   committed; its results are not in yet.
 
