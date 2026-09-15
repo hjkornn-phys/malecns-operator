@@ -39,7 +39,11 @@ worth seeing rather than folding into a pass.
 Limits: `receptorType` is putative; routing is not behaviour; no time axis and no firing threshold; and the
 hypothesis under test was generated from step 6's data, so this is replication on a different input set, not
 a clean out-of-sample test.
-Run from data/ after step7_ir52b.py:  step7b_sides.py [--seeds=N]
+Run from data/ after step7_ir52b.py:  step7b_sides.py [--seeds=N] [--lookup]
+--lookup audits every input and output set and exits without scoring: sizes, missing labels, overlaps,
+duplicate bodies, and whether each stimulus actually moves the network. It reports NO share on the readout
+under test, since that is the comparison the verdicts are about. It shares the set definitions with the run
+itself, so it describes what will actually be driven rather than a re-implementation of it.
 """
 import json, sys, time
 import numpy as np
@@ -47,6 +51,7 @@ import pandas as pd
 import scipy.sparse as sp
 
 SEEDS = int(next((a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--seeds=")), 20))
+LOOKUP = "--lookup" in sys.argv
 G, B, TOL, MAXIT = 0.9, 0.1, 1e-6, 2000
 LEG_MATCH, LEG_DRAWS, LEG_SEED0 = 65, 10, 5000
 WING = {"IR52b": ["WG1"], "ppk23": ["WG4"], "ppk25": ["WG3"]}
@@ -106,6 +111,36 @@ def solve(W):
         delta = np.abs(Hn - H).max(); H = Hn
         if delta < TOL: return H, it
     raise RuntimeError(f"no convergence in {MAXIT} iterations (last change {delta:.3g})")
+
+
+if LOOKUP:
+    print("\n--- inputs")
+    seen = {}
+    for name, r in cols[1:]:
+        dup = len(r) - len(set(r.tolist()))
+        miss = int((rs[r] == "-").sum())
+        print(f"  {name:20s} n={len(r):4d} duplicates={dup} rootSide missing={miss} "
+              f"types={sorted(set(typ.to_numpy()[r]))}")
+        for other, r2 in seen.items():
+            ov = len(set(r.tolist()) & set(r2.tolist()))
+            if ov: print(f"      overlaps {other} by {ov}")
+        seen[name] = r
+    print("\n--- outputs")
+    allstim = np.unique(np.concatenate([r for _, r in cols[1:]]))
+    for k, v in READ.items():
+        print(f"  {k:14s} n={len(v):5d} rootSide missing={int((rs[v] == '-').sum()):5d} "
+              f"overlap with any stimulus={len(set(v.tolist()) & set(allstim.tolist()))}")
+    print("\n--- feasibility on the baseline network (no readout shares: that is the comparison under test)")
+    Wl = sp.csr_matrix(((G * sign[pre[k3]] * w[k3] / in_tot[post[k3]]).astype(np.float32),
+                        (post[k3], pre[k3])), shape=(N, N))
+    H, it = solve(Wl); del Wl
+    R = (H[:, 1:] - H[:, :1]).astype(np.float64)
+    print(f"  converged in {it} iterations")
+    for j, (name, _) in enumerate(cols[1:]):
+        col = R[:, j]
+        print(f"  {name:20s} network mean {col.mean():+.3e} | max |r| {np.abs(col).max():.4f} | "
+              f"neurons moved >1e-4 {int((np.abs(col) > 1e-4).sum()):6d}")
+    sys.exit(0)
 
 
 def networks():
