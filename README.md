@@ -20,6 +20,11 @@ separate record kept beside this repository, in
 - The untrained wiring already carries taste identity to descending neurons,
   including from neurons never used in training; shuffled wiring does not —
   [Step 2a](#step-2a-can-taste-be-read-from-the-untrained-network).
+- **Training on the taste task improves agreement with the real fly, and only on
+  the real wiring.** Gains fitted to a four-way taste readout raise balanced
+  accuracy on the 149 held-out experimental outcomes from 0.669 to 0.715, while
+  the same training on shuffled wiring lands at 0.659, below where it started —
+  [Step 3](#step-3-does-the-trained-model-score-better-against-the-real-fly).
 - Three pheromone-receptor channels that look alike — all gustatory, all on legs
   and wings, all of similar size — are routed to different places by the wiring,
   by more than any of 20 degree-preserving rewirings, on both sensilla and on
@@ -31,9 +36,11 @@ separate record kept beside this repository, in
 
 **What does not, and what is still open**
 
-- Similarity to the real fly is NOT established: on 149 experimental outcomes
-  the untrained model scores near chance —
+- Similarity to the real fly is NOT established *for the untrained model*: on
+  149 experimental outcomes it scores near chance —
   [Result 1](#result-1-similarity-to-the-real-fly-could-not-be-established).
+  Training moves it (Step 3) without closing the gap: 0.715 balanced accuracy is
+  still a long way from reproducing the fly.
 - Whether compaction preserves *behaviour* is undecided. Three task sets have
   now tried and none could separate compaction from random pruning
   ([Result 2](#result-2-agreement-with-the-baseline), Step 2a rule R4,
@@ -47,8 +54,13 @@ separate record kept beside this repository, in
   turned out not to be it: supplying them changes nothing, because the giant
   fiber's own response is already too small and this rate model has no spike to
   amplify it — [Step 5](#step-5-the-missing-gap-junctions-were-not-the-bottleneck).
-- `step2b_taste.py` trains the gains on the Step 2a task. Its rules are
-  committed; its results are not in yet.
+- Training barely moves the loss it is given. Step 2b's cross-fitted loss falls
+  4.5% against the 20% its rule asked for, and still buys a real held-out gain —
+  [Step 2b](#step-2b-training-the-gains-on-the-taste-task).
+- Adding a time axis buys nothing for the escape pathway on its own. Approach
+  speed moves the giant fiber by 2e-5 over a sixfold range, and no tau spread
+  tried separated the wiring from its own shuffled null —
+  [Step 8](#step-8-a-time-axis-buys-no-velocity-signal).
 
 ## Setup
 
@@ -160,6 +172,10 @@ readout by > 20%; sufficient = MN9 response > 0.01, truth = optogenetic PE rate
 The untrained model does not reproduce the experiments, so these tasks cannot
 say whether compaction keeps the fly's behaviour.
 
+This is the untrained model. [Step 3](#step-3-does-the-trained-model-score-better-against-the-real-fly)
+rescores the same 149 outcomes under these same rules after training and finds
+0.715, so the gap narrows but does not close.
+
 | g = 0.9 | accuracy | balanced accuracy |
 |---|---|---|
 | answer "no" to everything | 0.671 | 0.500 |
@@ -267,8 +283,8 @@ its start, every alpha within 0.01, s within 1%, b within 0.005.
 
 Step 1 used targets the model generated itself. Step 2 gives it a task with many
 labelled samples: name the taste from the network's output. Step 2a asks what
-the untrained wiring already does; Step 2b (rules committed, results not in yet)
-trains the gains on the same task and split.
+the untrained wiring already does; Step 2b trains the gains on the same task and
+split; Step 3 then scores those trained gains against the fly.
 
 ### Step 2a: can taste be read from the untrained network?
 
@@ -360,6 +376,83 @@ network's answer differs from the baseline's, paired over the same samples.
 - Every pruned network scores at or above the baseline on test B, which is what
   a set of near-chance scores looks like when noise is the main signal; it is not
   evidence that pruning helps.
+
+### Step 2b: training the gains on the taste task
+
+Rules were committed (`18b6831`) before the run. The first design was dropped
+before it produced a number: a smoke test showed the logistic readout loss on the
+2a training set sitting at 0.001 with a gradient of 5e-6, because that set is
+separable, so Adam was doing a random walk. Per-feature standardisation then blew
+the gradient up to 1.5e3. What ran instead is a **cross-fitted ridge loss on two
+halves of the training neurons**, centred features, Adam at lr 0.05, 40 steps.
+The implicit gradient agrees with the unrolled one to 1e-11.
+
+```sh
+uv run --project .. --extra torch python ../scripts/step2b_taste.py baseline   # ~95 min, 2.14 GB
+uv run --project .. --extra torch python ../scripts/step2b_taste.py shuffled   # ~50 min, 2.30 GB
+```
+
+| | cross loss | test A | test B (held-out neurons) | gain CI |
+|---|---|---|---|---|
+| baseline, start → end | 0.1901 → 0.1816 | 1.000 → 1.000 | **0.619 → 0.656** | [+0.012, +0.070] |
+| shuffled, start → end | 0.9430 → 0.9225 | 0.994 → 1.000 | 0.262 → 0.244 | [-0.055, +0.017] |
+
+- **T1 training works: False.** The loss fell 4.5% against the 20% the rule asked
+  for, on both networks. The rule was not re-tuned afterwards.
+- **T2 held-out gain: True on baseline, False on shuffled.** Thirty-four
+  parameters, trained on a loss that never sees the held-out neurons, bought
+  +0.037 balanced accuracy. Per-class recall rose on three of four: sugar 0.175 →
+  0.225, water 0.725 → 0.800, bitter 0.575 → 0.600, ir94e unchanged at 1.000.
+- **T3 gain needs the wiring: True.** The shuffled network trained to nothing, its
+  interval spanning zero.
+
+So how far a loss falls and whether what it learns generalises are different
+questions, and this run separates them. The parameters moved a great deal even
+though the loss did not: alpha from a flat 0.9 to [0.951, 0.570, 0.970, 0.531,
+0.963], s from 1.000 to 1.339, b from 0.100 to 0.263.
+
+## Step 3: does the trained model score better against the real fly?
+
+This closes the loop [Result 1](#result-1-similarity-to-the-real-fly-could-not-be-established)
+opened. The 149 experimental outcomes were never in Step 2b's training data, so
+they are genuinely held out, and they are scored here under the **same rules,
+unchanged**. Rules were committed (`fdd3527`) before the run.
+
+```sh
+uv run --project .. python ../scripts/step3_rescore.py --seeds=10   # ~11 min
+```
+
+| parameters | accuracy | balanced accuracy |
+|---|---|---|
+| untrained (= Result 1's g = 0.9 baseline) | 0.758 | 0.669 |
+| **trained** (Step 2b baseline) | **0.785** | **0.715** |
+| shuffled-trained (Step 2b shuffled, scored on the real network) | 0.752 | 0.659 |
+
+- **S0 transcription is faithful: True**, and exactly — the untrained parameters
+  reproduce `score_shiu.json` on **149 of 149**, where the rule allowed 145. So
+  this is the same scoring Result 1 used and the comparison is to that number.
+- **S1 training moved the biology: True.** +0.046, against a rule asking for more
+  than 0.01. The rule was written two-sided on purpose; it moved upward.
+- **S2 it moved it the right way: True.**
+- **S3 the wiring earned it: True.** Gains learned on scrambled wiring score
+  **below the untrained model**, so training on a shuffled network makes agreement
+  with the fly worse. The real network's gains improve it.
+- **S4 compaction still holds up: True.** With trained parameters OR 1% changes 5
+  of its own baseline's answers; the ten random seeds change 9 to 19.
+- **TRAINING IMPROVED BIOLOGICAL SIMILARITY: True.**
+
+What this does not say. 0.715 is still far from reproducing the fly, and
+answering "no" to everything scores 0.500. Balanced accuracy on 149 outcomes is a
+coarse instrument, the gains are 34 numbers and not a mechanism, and nothing here
+identifies *which* outcomes changed or why. What it does say is that a task with
+many labelled samples can move a connectome model toward the biology at all, which
+[Result 1](#result-1-similarity-to-the-real-fly-could-not-be-established) left
+open, and that the real wiring is required for it.
+
+All five verdicts were predicted before the run and **three of the predictions
+were wrong** — S1, S2, and S3's claimed size. The reasoning that failed, twice in
+the same file about the same run, was treating "the loss hardly moved" as "nothing
+changed". That is recorded in `PREDICTIONS.md`.
 
 ## Step 4: a dark patch reaches the giant fiber, and stops there
 
@@ -625,6 +718,95 @@ from step 6's own data, so this is a replication on a different stimulus set
 rather than a clean out-of-sample test. The predictions registered before both
 runs, and their outcomes, are in `PREDICTIONS.md`.
 
+## Step 8: a time axis buys no velocity signal
+
+Rules were committed (`466c77d`) before the run. The model gains a leak and one
+`lambda = dt/tau` per cell type; **nothing is trained**, so it is run forward only
+with no stored activation and no backpropagation through time. At `lambda = 1` it
+is Step 4's fixed-point iteration exactly.
+
+```sh
+uv run --project .. python ../scripts/step8_dynamics.py   # ~25 min, 1.28 GB
+```
+
+The published target is specific. In *Current Biology* 2019, Ache & von Reyn et
+al. reproduce the giant fiber's looming response as **a linear function of
+angular velocity supplied by LC4, summed with a Gaussian function of angular size
+supplied by LPLC2**. A lookup run before the rules found that circuit intact in
+MaleCNS: LC4 (0.146) and LPLC2 (0.112) are DNp01's first and second inputs ahead
+of DNp70 at 0.033; LPLC2 receives all four T5 subtypes (0.184) and all four T4
+(0.127); T4 and T5 are fed by the published ON and OFF pathways (Mi1 0.257, Tm3
+0.117 / Tm9 0.165, Tm2 0.150). **LC4 receives no T4 or T5 at all**, so its
+velocity component does not arrive through direction-selective cells.
+
+The same lookup ruled out a whole class of rule before it was written. Against
+Step 4's own shuffled seeds, LPLC2's response level never clears its null at any
+radius above r2 (shuffled 0.0395 against baseline 0.0198 at r18), LC4 saturates by
+r6, and DNp01's entire range is 0.0002 to 0.0061. **No absolute threshold belongs
+on this pathway**, so every verdict is a rank test or an ordering.
+
+| verdict | result |
+|---|---|
+| D0 same model | **True, to 0.00e+00** on all of DNp01_R, LC4, LPLC2 |
+| D1 asymmetry is wiring | True — see the reading below |
+| D2 velocity tuned | **False** |
+| D3 velocity is wiring | **False** |
+| D4 size arm survives | True, Spearman 1.000 |
+| D5 Gaussian size | False |
+| D6 how much tau | **NONE IN RANGE** — see below |
+| WIRING CARRIES VELOCITY | **False** |
+
+- **D0 is exact.** The leaky model at `lambda = 1` reproduces Step 4 bit for bit,
+  so the two are the same model. Separately worth recording: the *peak* over
+  frames at static r18 is 0.0080 against the steady state's 0.0061, a 31%
+  transient overshoot. D0 was written against the peak first and changed to read
+  the final frame before the rules were committed; unchanged, it would have failed
+  a model that is provably right.
+- **The velocity arm is a clean negative.** Loom responses at DNp01 across
+  approach speeds 20 to 130 frames are 0.00641, 0.00643, 0.00643, 0.00643,
+  0.00643. A sixfold change in speed moves the giant fiber by 2e-5. Baseline's
+  speed correlation (0.600) sits *below* four of the five shuffled seeds (0.707).
+- **The size arm crosses unchanged**, at the same Spearman 1.000 Step 4 found
+  without a time axis, and LPLC2 still rises monotonically to r18 with no interior
+  peak, so the literature's Gaussian is not recovered.
+
+**D1 passed, and what it measured is not looming selectivity.** The verdict
+stands; the reading is recorded beside it. Recede's schedule shows the full r18
+disc at frame 0 to a network at rest and loom's never does, so the gap is that
+onset transient — and **both schedules are flat to five decimals across a sixfold
+speed range** (recede 0.00797 at every speed), which no real direction signal
+could be. The shuffled null could not catch it because those networks barely
+respond at all (0.0002–0.0011), so any transient structure in baseline clears
+them. A rank test against a null that cannot produce the artefact does not control
+for the artefact. The lookup asked whether the readout was reachable and whether
+the categories held; it did not ask whether the **stimulus schedules were
+matched**. Per the method, D1 is not re-tuned — the matched-onset question gets
+its own rule before its own run.
+
+**D6 returned NONE IN RANGE, and that is not a statement about tau.** Stability
+was held with `lam0 = 1/max(m)`, so raising the spread lowers the global lambda
+with it:
+
+| sigma | lam0 | baseline rho | shuffled max | D2 | D3 |
+|---|---|---|---|---|---|
+| 0.25 | 0.373 | +1.000 | 1.000 | pass | fail |
+| 0.5 | 0.139 | +1.000 | 1.000 | pass | fail |
+| 1.0 | 0.019 | +1.000 | 1.000 | pass | fail |
+| 1.5 | 0.003 | +1.000 | 1.000 | pass | fail |
+| 2.0 | 0.0004 | +0.707 / +1.000 | 1.000 | fail / pass | fail |
+
+By sigma = 1.0 the global time constant is 50 frames against a 200-frame window,
+and at 2.0 it is 2,600. The network stops settling, so a slower approach simply
+spends longer at the final radius and peaks higher — which is why baseline reaches
+1.000 and **why every shuffled seed reaches 1.000 alongside it**. The sweep
+confounded spread with global slowing, and D3 demands a strict win on a statistic
+bounded at 1.000 that both sides had saturated. Normalising the mean lambda rather
+than the maximum, and lengthening the window until every condition settles, is
+what asks the intended question; that belongs to a new rule, not a re-tuning.
+
+What survives: at every tau spread tried, the degree-preserving null matched the
+baseline exactly. Nothing in this run separated the wiring from it.
+
 ## Layout
 
 - `data/` — downloaded tables, caches, logs and result JSON; not committed.
@@ -638,10 +820,12 @@ runs, and their outcomes, are in `PREDICTIONS.md`.
 | model | `fpmodel.py` — the trainable rate model, imported by every step-1 and step-2 script |
 | step 1 | `step1_gradcheck.py`, `step1_recovery.py`, `step1_identify.py` |
 | step 2 | `step2a_taste.py`, `step2a_mix.py`, `step2b_taste.py` |
+| step 3 | `step3_rescore.py` |
 | step 4 | `step4_size.py` |
 | step 5 | `step5_gapjunction.py` |
 | step 6 | `step6_pheromone.py` |
 | step 7 | `step7_ir52b.py`, `step7b_sides.py` |
+| step 8 | `step8_dynamics.py` |
 | viewer data | `viz_export.py` |
 
 ### Viewer data
