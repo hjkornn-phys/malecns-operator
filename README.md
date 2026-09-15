@@ -203,6 +203,51 @@ its start, every alpha within 0.01, s within 1%, b within 0.005.
   with implicit Jacobian-vector products, or reparameterisation; plain Adam is
   expected to stall.
 
+## Step 2a: can taste be read from the untrained network?
+
+Before training anything, check whether the network as wired already carries
+taste to its output. Rules were committed (`91bd611`) before the run.
+
+```sh
+cd data
+uv run --project .. --extra torch python ../scripts/step2a_taste.py --seeds=10   # ~15 min, 1.58 GB
+```
+
+**Task.** Four taste groups from the Shiu mapping: sugar (34 bodies), water
+(17), bitter (38), Ir94e (32). A sample switches on a random half of one
+group, plus weak random background from the other 1,307 gustatory neurons. A
+linear classifier (logistic regression) reads the 1,314 descending neurons.
+30% of each group's bodies are held out. Test A reuses training bodies in new
+combinations; test B uses only held-out bodies, so it asks whether the network
+pools neurons of the same taste. Chance is 0.25.
+
+| network | test A | test B (held-out bodies) |
+|---|---|---|
+| input only, no network | 1.000 | 0.269 |
+| baseline `weight >= 3` | 1.000 | 0.712 |
+| OR 1% (compacted) | 1.000 | 0.737 |
+| random, OR 1% size, 10 seeds | 1.000 | 0.702 (0.500–0.831) |
+| shuffled wiring, 10 seeds | 1.000 | 0.267 (0.094–0.425) |
+
+| rule | result |
+|---|---|
+| R1 readout carries taste: baseline test A >= 0.5 | pass |
+| R2 generalises: baseline test B >= 0.5 and above input only | pass |
+| R3 wiring matters: baseline test B above every shuffled seed | pass |
+| R4 compaction keeps it: OR 1% within 0.05 of baseline and above every random seed | **fail** |
+
+- The wiring carries taste identity to descending neurons, including from
+  bodies never used in training; with partners shuffled (same degrees, same
+  counts) it does not.
+- It is uneven. Baseline test B recall: water 1.00, bitter 0.95, Ir94e 0.75,
+  **sugar 0.15** (34 of 40 held-out sugar samples called water).
+- R4 fails because the task cannot separate pruning rules: OR 1% scored above
+  the baseline, but 9 of 10 random seeds came within 0.05, and 160 test samples
+  carry about ±0.07 of sampling noise. It is not evidence that compaction hurts.
+- Test A is 1.000 for every network, including shuffled ones, so it measures
+  nothing here. Shuffled networks drive 98% of descending neurons against 32%
+  for the baseline, so part of their failure may be saturation.
+
 ## Layout
 
 - `scripts/` — pipeline, task and training scripts; run from `data/`
