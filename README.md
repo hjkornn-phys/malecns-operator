@@ -601,10 +601,37 @@ Share of a channel's drive landing on the 1,258 male-specific neurons:
 - pC1, the readout step 6 built its rules on, still shows nothing: IR52b -0.204
   there. The effect lives in the wider male-specific population.
 
+### Step 7b: it survives the split
+
+`step7b_sides.py` (rules `467d670`, ~7 min) redoes the side split on `rootSide`,
+which is populated 48/48 per wing type and 65/65 per leg type. A feasibility
+lookup ran first, from the same set definitions the run uses (`--lookup`): no
+duplicate bodies, no missing labels, no stimulus body inside a readout, every
+stimulus moving 6,700–14,500 neurons. The same lookup found `rootSide` null for
+all 1,258 male-specific and all 156 pC1 neurons, so **laterality cannot be asked
+here at all** and these rules do not pretend to; this is a split-half
+replication, and the two halves sit in one interconnected connectome, so they are
+not independent samples.
+
+| half | wing | shuffled range | leg | shuffled range |
+|---|---|---|---|---|
+| IR52b L | **+0.787** | +0.205 … +0.638 | **+0.660** | +0.158 … +0.410 |
+| IR52b R | **+0.748** | +0.238 … +0.462 | **+0.613** | +0.121 … +0.395 |
+| ppk23 L | +0.216 | +0.313 … +0.780 | -0.186 | +0.216 … +0.506 |
+| ppk23 R | +0.214 | +0.288 … +0.749 | -0.073 | +0.202 … +0.505 |
+| ppk25 L | +0.200 | +0.340 … +0.685 | -0.715 | +0.231 … +0.474 |
+| ppk25 R | +0.228 | +0.307 … +0.745 | -0.518 | +0.224 … +0.459 |
+
+R1 through R5 all pass, so **SPLIT-HALF REPLICATED**. Each half of the wing
+neurons on its own puts IR52b above every one of the 20 shuffled seeds and both
+ppk channels below theirs, on wing and on leg alike. The two halves differ by
+0.039 against a shuffled spread of 0.433, a ratio of about ten, so the effect does
+not depend on which side's neurons are driven.
+
 Routing is not behaviour, `receptorType` is putative, and the hypothesis came
 from step 6's own data, so this is a replication on a different stimulus set
-rather than a clean out-of-sample test. The predictions registered before the run
-are in `PREDICTIONS.md`.
+rather than a clean out-of-sample test. The predictions registered before both
+runs, and their outcomes, are in `PREDICTIONS.md`.
 
 ## Layout
 
