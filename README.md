@@ -4,9 +4,11 @@ Network-model work on the MaleCNS v1.0 connectome: fetch, filter, compact,
 solve, compare against baseline, and train a steady-state rate model. Every
 number below was measured on one 8 GB Apple M1 laptop.
 
-Each question below is decided by rules written into the script's docstring and
-committed BEFORE the run that answers it, so a failed rule stays failed. Where a
-result is negative or undecidable, it is reported as such.
+Each question is decided by rules written into its script's docstring. The method
+those rules follow — what has to be measured before a threshold is chosen, what a
+result may claim, and the predictions registered before each run — lives in the
+separate record kept beside this repository, in
+`METHOD.md` and `PREDICTIONS.md`.
 
 **What holds so far**
 
@@ -63,58 +65,6 @@ cd data
 uv run --project .. python ../scripts/<script>.py                 # pipeline, tasks
 uv run --project .. --extra torch python ../scripts/<script>.py   # steps 1 and 2
 ```
-
-## Setting a threshold
-
-Every rule here needs numbers — a response threshold, a correlation floor, a
-grouping of channels — and choosing them by feel has now cost two runs, so a
-**lookup pass comes before the rule is written**, and the numbers it returns go
-in the docstring beside the threshold they justify.
-
-A lookup may measure:
-
-- **the null** — the shuffled and random-control distributions, which fix the
-  noise floor and so what "above chance" can mean here;
-- **scale and feasibility** — whether a stimulus of the intended size moves the
-  intended readout at all, and what range that readout spans;
-- **items whose answer is already known** from the literature or from an earlier
-  scored task, which calibrate sign and magnitude;
-- **whether each category holds what it is assumed to hold** — that a readout set
-  contains the neurons the literature says carry the function, and that a channel
-  grouped under one label does not span opposite ones.
-
-A lookup may **not** measure the comparison the verdict is about. Setting the
-threshold from the effect under test is how a rule stops being a test. When only
-the effect itself would answer the question, the answer is a calibration slice
-held out from scoring, not a peek.
-
-What this would have caught:
-
-- **Step 4, E1.** The 0.01 response threshold was inherited from `score_shiu.py`
-  without checking it against this readout. Shuffled DNp01 responses span
-  0.001–0.004, so no variant of this network could have reached 0.01 at the giant
-  fiber: the rule was unreachable before it was run, and looking at the null
-  alone would have said so.
-- **Step 6, P5.** Bitter was grouped with sugar and water as "food" and required
-  to score above the pheromone channels on MN9. Bitter is aversive and suppresses
-  proboscis extension — which this repo had already measured, in Shiu task 5 — so
-  it goes negative and fails the rule for the correct biological reason. A lookup
-  on that known item would have split the grouping.
-- **Step 7, the reading of it.** The readout sets were audited for size, missing
-  labels and overlap, but never for whether they contained the neurons that
-  matter. The ppk channels' published target, PPN1 = `AN05B102a`, carries no
-  `dimorphism` or `fruDsx` annotation and so sat outside every readout, which
-  made "routed away from courtship circuitry" the wrong reading of a correct
-  measurement. Checking one named neuron against the sets would have caught it.
-
-The same mistake three times — bitter grouped with the appetitive channels, three
-receptor channels grouped as one, and a readout set that omitted the target — is
-one mistake: never asking whether a category holds what its name suggests.
-
-All of these stand as recorded. A rule is not re-tuned once its run has been
-seen; a sharper question gets a new rule, committed before its own run. A
-*reading* of a result is a different thing and is corrected in place when the
-evidence says so, as step 7's was.
 
 ## Terms
 
@@ -557,8 +507,7 @@ members do not behave alike.
   is +0.032 while shuffled seeds range up to +0.158. The effect is inside the
   noise band of scrambled wiring, so even the ppk23 and ppk25 positivity is not
   established. A lookup on that null would have said so before the rule was
-  written, which is now the standing procedure — see
-  [Setting a threshold](#setting-a-threshold).
+  written, which is now the standing procedure — see `METHOD.md`.
 
 P2 passes: all three channels beat the 402 unlabelled leg and wing GRNs, so the
 anatomical confound is at least partly controlled. It is the only thing this run
