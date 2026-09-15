@@ -24,12 +24,14 @@ result is negative or undecidable, it is reported as such.
 - Similarity to the real fly is NOT established: on 149 experimental outcomes
   the untrained model scores near chance —
   [Result 1](#result-1-similarity-to-the-real-fly-could-not-be-established).
-- Whether compaction preserves *behaviour* is undecided. Both task sets that
-  tried to answer it could not separate compaction from random pruning
-  ([Result 2](#result-2-agreement-with-the-baseline), Step 2a rule R4).
-- Rules for two further runs are committed and their results are not in yet:
-  `step2a_mix.py` (a mixture task meant to judge compaction) and
-  `step2b_taste.py` (training the gains on the Step 2a task).
+- Whether compaction preserves *behaviour* is undecided. Three task sets have
+  now tried and none could separate compaction from random pruning
+  ([Result 2](#result-2-agreement-with-the-baseline), Step 2a rule R4,
+  [Step 2a-mix](#step-2a-mix-a-harder-task-and-it-decided-nothing)).
+- Generalisation to held-out neurons holds for single tastes and breaks for
+  mixtures, where the real wiring is no better than shuffled wiring.
+- `step2b_taste.py` trains the gains on the Step 2a task. Its rules are
+  committed; its results are not in yet.
 
 ## Setup
 
@@ -294,6 +296,49 @@ pools neurons of the same taste. Chance is 0.25.
 - Test A is 1.000 for every network, including shuffled ones, so it measures
   nothing here. Shuffled networks drive 98% of descending neurons against 32%
   for the baseline, so part of their failure may be saturation.
+
+### Step 2a-mix: a harder task, and it decided nothing
+
+Step 2a could not separate compaction from random pruning (R4). This run tried
+to fix that with a harder task and six times the test samples. Rules were
+committed (`1daaf27`) before the run.
+
+```sh
+uv run --project .. --extra torch python ../scripts/step2a_mix.py --seeds=10   # ~44 min, 1.51 GB
+```
+
+Each sample now mixes two tastes and the label is the dominant one, at 1.0
+against 0.3–0.8. Test B grows from 160 to 1,000 samples. The deciding measure is
+no longer accuracy but **disagreement**: the share of test B samples where a
+network's answer differs from the baseline's, paired over the same samples.
+
+| network | test A | test B | d vs baseline [95% CI] | disagreement [95% CI] |
+|---|---|---|---|---|
+| baseline `weight >= 3` | 0.970 | 0.308 | — | — |
+| OR 1% | 0.965 | 0.390 | +0.082 [+0.065, +0.099] | 0.152 [0.129, 0.174] |
+| random, 10 seeds | 0.940–0.960 | 0.389 mean (0.305–0.536) | — | 0.185 mean (0.080–0.324) |
+| shuffled, 3 seeds | 0.930–0.938 | 0.254–0.318 | — | 0.383–0.568 |
+
+| rule | result |
+|---|---|
+| M0 task is informative: baseline test B in [0.35, 0.95] | **fail** (0.308) |
+| S wiring still matters: baseline above every shuffled seed | **fail** (shuffled seed 0 reaches 0.318) |
+| C1 OR 1% loses no accuracy: lower CI bound of d >= -0.05 | pass |
+| C2 OR 1% beats random pruning: lowest disagreement | **fail** (3 seeds disagree less) |
+| **compaction kept** | **not decided** |
+
+- M0 fails, so by its own rule this task decides nothing about compaction; C1 and
+  C2 are reported but carry no weight. The threshold was not revisited after the
+  result was seen.
+- The failure is informative. Mixtures are read almost perfectly off neurons
+  used in training (0.970) and barely above chance off held-out ones (0.308,
+  chance 0.25). Single tastes generalised to held-out neurons (Step 2a, 0.712);
+  "which of two tastes is stronger" does not.
+- S fails here too, so on this task the real wiring is no better than shuffled
+  wiring. Step 2a's R3 result stands on its own task, not on this one.
+- Every pruned network scores at or above the baseline on test B, which is what
+  a set of near-chance scores looks like when noise is the main signal; it is not
+  evidence that pruning helps.
 
 ## Layout
 
