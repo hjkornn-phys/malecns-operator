@@ -22,7 +22,7 @@ result is negative or undecidable, it is reported as such.
   and wings, all of similar size — are routed to different places by the wiring,
   by more than any of 20 degree-preserving rewirings, on both sensilla and on
   each side's neurons alone —
-  [Step 7](#step-7-ir52b-routes-into-the-male-specific-circuitry-ppk23-and-ppk25-away-from-it).
+  [Step 7](#step-7-three-look-alike-pheromone-channels-are-routed-to-different-places).
   What those places *mean* is open: the readout sets used there turned out not to
   contain the ppk channels' published target, and that correction is recorded
   with the result.
@@ -562,7 +562,7 @@ P2 passes: all three channels beat the 402 unlabelled leg and wing GRNs, so the
 anatomical confound is at least partly controlled. It is the only thing this run
 establishes.
 
-## Step 7: IR52b routes into the male-specific circuitry, ppk23 and ppk25 away from it
+## Step 7: three look-alike pheromone channels are routed to different places
 
 Step 6's rules failed and stand failed. Its numbers were then read exploratorily
 and showed the primary readout had been the wrong one: on pC1 everything sat
