@@ -488,6 +488,59 @@ G2-G5 were not evaluated, since the rules make them conditional on G1.
 - Reported as a failed hypothesis, not retuned. Raising kappa past 0.8 would only
   be fitting the assumption to the wanted answer.
 
+## Step 6: pheromone routing — the question was not answered, and the design is why
+
+Rules were committed (`f208010`) before the run. Three receptor-labelled channels
+(putative ppk23 269, ppk25 257, IR52b 226, all leg and wing bristle GRNs) were
+compared against sugar, water and bitter, every channel subsampled to 17 bodies
+over 10 draws, scored as the share of a channel's drive landing on a readout.
+
+```sh
+uv run --project .. python ../scripts/step6_pheromone.py --seeds=10   # ~7 min, 1.3 GB
+```
+
+| readout | ppk23 | ppk25 | IR52b | sugar | water | bitter | unlabelled leg/wing |
+|---|---|---|---|---|---|---|---|
+| pC1 | 0.016 | 0.041 | -0.167 | -0.023 | -0.038 | -0.145 | -0.193 |
+| male-specific | -0.257 | -0.003 | **0.688** | 0.056 | 0.184 | 0.143 | -0.198 |
+| fru_high | 0.007 | 0.117 | 0.363 | 0.022 | 0.100 | 0.076 | -0.091 |
+| MN9 | -0.020 | -0.009 | 0.010 | **3.652** | **1.190** | **-0.389** | -0.050 |
+
+| rule | result |
+|---|---|
+| P1 pheromone to courtship | **fail** |
+| P2 not just anatomy | pass |
+| P3 male-specific routing | **fail** |
+| P4 the wiring did it | **fail** (baseline gap +0.032, shuffled max +0.158) |
+| P5 reverse control | **fail** |
+| P6 compaction keeps it | **fail** |
+| **routing reverse-engineered** | **no** |
+
+Two design errors, both of the same kind: a conjunctive rule over a group whose
+members do not behave alike.
+
+- **P5 grouped bitter with sugar and water.** Bitter is aversive and suppresses
+  proboscis extension, which this repo had already measured in Shiu task 5, so it
+  lands at -0.389 on MN9 and sinks the rule. What the numbers do show, as a
+  description and not as a passed test, is sugar 3.652 and water 1.190 against
+  about 0.01 for every pheromone channel — the appetitive separation the gate was
+  built to look for, at more than a hundredfold. Testing that needs its own rule,
+  committed before its own run.
+- **P1 and P3 treated ppk23, ppk25 and IR52b as one category.** They are not.
+  IR52b is the strongest router to male-specific neurons of anything measured
+  (0.688) while sitting below bitter on pC1; ppk23 is the reverse, positive on
+  pC1 and -0.257 on male-specific. Three channels, three behaviours.
+- **P4 is the one that matters most.** The baseline's pheromone-food gap on pC1
+  is +0.032 while shuffled seeds range up to +0.158. The effect is inside the
+  noise band of scrambled wiring, so even the ppk23 and ppk25 positivity is not
+  established. A lookup on that null would have said so before the rule was
+  written, which is now the standing procedure — see
+  [Setting a threshold](#setting-a-threshold).
+
+P2 passes: all three channels beat the 402 unlabelled leg and wing GRNs, so the
+anatomical confound is at least partly controlled. It is the only thing this run
+establishes.
+
 ## Layout
 
 - `data/` — downloaded tables, caches, logs and result JSON; not committed.
@@ -503,6 +556,7 @@ G2-G5 were not evaluated, since the rules make them conditional on G1.
 | step 2 | `step2a_taste.py`, `step2a_mix.py`, `step2b_taste.py` |
 | step 4 | `step4_size.py` |
 | step 5 | `step5_gapjunction.py` |
+| step 6 | `step6_pheromone.py` |
 | viewer data | `viz_export.py` |
 
 ### Viewer data
