@@ -56,6 +56,43 @@ uv run --project .. python ../scripts/<script>.py                 # pipeline, ta
 uv run --project .. --extra torch python ../scripts/<script>.py   # steps 1 and 2
 ```
 
+## Setting a threshold
+
+Every rule here needs numbers — a response threshold, a correlation floor, a
+grouping of channels — and choosing them by feel has now cost two runs, so a
+**lookup pass comes before the rule is written**, and the numbers it returns go
+in the docstring beside the threshold they justify.
+
+A lookup may measure:
+
+- **the null** — the shuffled and random-control distributions, which fix the
+  noise floor and so what "above chance" can mean here;
+- **scale and feasibility** — whether a stimulus of the intended size moves the
+  intended readout at all, and what range that readout spans;
+- **items whose answer is already known** from the literature or from an earlier
+  scored task, which calibrate sign and magnitude.
+
+A lookup may **not** measure the comparison the verdict is about. Setting the
+threshold from the effect under test is how a rule stops being a test. When only
+the effect itself would answer the question, the answer is a calibration slice
+held out from scoring, not a peek.
+
+What this would have caught:
+
+- **Step 4, E1.** The 0.01 response threshold was inherited from `score_shiu.py`
+  without checking it against this readout. Shuffled DNp01 responses span
+  0.001–0.004, so no variant of this network could have reached 0.01 at the giant
+  fiber: the rule was unreachable before it was run, and looking at the null
+  alone would have said so.
+- **Step 6, P5.** Bitter was grouped with sugar and water as "food" and required
+  to score above the pheromone channels on MN9. Bitter is aversive and suppresses
+  proboscis extension — which this repo had already measured, in Shiu task 5 — so
+  it goes negative and fails the rule for the correct biological reason. A lookup
+  on that known item would have split the grouping.
+
+Both failures stand as recorded. A rule is not re-tuned once its run has been
+seen; a sharper question gets a new rule, committed before its own run.
+
 ## Terms
 
 | term | meaning |
