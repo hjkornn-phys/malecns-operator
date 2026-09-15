@@ -1,7 +1,8 @@
 # malecns-operator
 
 Network-model work on the MaleCNS v1.0 connectome: fetch, filter, compact,
-solve, compare against baseline.
+solve, compare against baseline, and train a steady-state rate model. Every
+number below was measured on one 8 GB Apple M1 laptop.
 
 ## Setup
 
@@ -13,8 +14,8 @@ uv run python <script>
 
 ## Compute
 
-Default path: `pyarrow`, `pandas`, `numpy`,
-`scipy`, sparse on CPU (~72 s, ~1.1 GB peak for the full comparison).
+The pipeline scripts use `pyarrow`, `pandas`, `numpy` and `scipy`, sparse on
+CPU (~77 s, ~1.4 GB peak for the full comparison).
 
 PyTorch is optional and only worth it where it wins:
 - the cell-type-collapsed network (~11.7k², dense, fits in memory) on MPS;
@@ -34,8 +35,19 @@ dense cell-type work.
 
 ## Pipeline
 
-The pipeline scripts in `scripts/` read and write the current
-directory, so run them from `data/`:
+The first four scripts build the neuron-to-neuron network and measure it:
+
+- `fetch.py` downloads the three MaleCNS tables anonymously.
+- `retention.py` caches neuron edges and measures how many edges and synapses
+  survive absolute-count and input-fraction thresholds.
+- `retention_or.py` measures the OR rule at `weight >= 3`: an edge is kept when
+  it is at least a given fraction of EITHER the target's total input or the
+  source's total output. "OR 1%" is that rule at 1%, the compacted network.
+- `compare_steady.py` solves a steady-state rate model on the `weight >= 3`
+  baseline, the compacted networks and random edge subsets of the same size,
+  and compares their responses on readout neurons.
+
+They read and write the current directory, so run them from `data/`:
 
 ```sh
 cd data
@@ -45,13 +57,14 @@ uv run --project .. python ../scripts/retention_or.py
 uv run --project .. python ../scripts/compare_steady.py 0.5 0.9
 ```
 
-Measured here with the pipeline scripts (readout r at g = 0.9: OR 1%
-median 0.968 / worst 0.931; random 0.779 / 0.563), 77 s at 1.41 GB.
+Measured: 25,582,938 neuron edges; baseline `weight >= 3` 10,520,431 edges;
+OR 1% 5,487,781 edges (61.9% of synapse mass). Readout r against the baseline
+at g = 0.9: OR 1% median 0.968 / worst 0.931; one random control of the same
+size 0.779 / 0.563. 77 s at 1.41 GB.
 
 ## Ground-truth tasks (Shiu et al. 2024)
 
-Downloads go to `data/shiu/` (see each
-script's docstring for sources):
+Downloads go to `data/shiu/` (see each script's docstring for sources):
 
 ```sh
 cd data
@@ -132,12 +145,13 @@ ourselves. It says nothing about similarity to the real fly.
 
     h* = ReLU(gamma[superclass(post)] * (W0 @ (alpha[transmitter(pre)] * h*)) + s * u + b)
 
-`W0` is the signed count-fraction matrix. `alpha` (5 transmitter
-classes) and `gamma` (per superclass) pass through sigmoids so every gain is
-below 0.99 and the iteration always contracts. A global gain `g` is absorbed into
-`alpha * gamma`, and a threshold `theta` would only enter as `b - theta`, so
-neither is a separate parameter. Gradients use implicit differentiation at the
-fixed point (adjoint iteration), with no unrolling.
+`W0` is the signed count-fraction matrix, `sign(pre) * weight / total input of
+post`. `alpha` (5 transmitter classes) and `gamma` (per superclass) pass through
+sigmoids so every gain is below 0.99 and the iteration always contracts. A
+global gain `g` is absorbed into `alpha * gamma`, and a threshold `theta` would
+only enter as `b - theta`, so neither is a separate parameter. Gradients use
+implicit differentiation at the fixed point (adjoint iteration), with no
+unrolling.
 
 ```sh
 cd data
@@ -191,5 +205,5 @@ its start, every alpha within 0.01, s within 1%, b within 0.005.
 
 ## Layout
 
-- `data/`   — fetched tables and caches (`nn_edges.npz`); not committed
-- `runs/`   — outputs; not committed
+- `scripts/` — pipeline, task and training scripts; run from `data/`
+- `data/`    — downloaded tables, caches, logs and result JSON; not committed
