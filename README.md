@@ -111,8 +111,10 @@ The same mistake three times — bitter grouped with the appetitive channels, th
 receptor channels grouped as one, and a readout set that omitted the target — is
 one mistake: never asking whether a category holds what its name suggests.
 
-Both failures stand as recorded. A rule is not re-tuned once its run has been
-seen; a sharper question gets a new rule, committed before its own run.
+All of these stand as recorded. A rule is not re-tuned once its run has been
+seen; a sharper question gets a new rule, committed before its own run. A
+*reading* of a result is a different thing and is corrected in place when the
+evidence says so, as step 7's was.
 
 ## Terms
 
