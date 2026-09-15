@@ -4,13 +4,59 @@ Network-model work on the MaleCNS v1.0 connectome: fetch, filter, compact,
 solve, compare against baseline, and train a steady-state rate model. Every
 number below was measured on one 8 GB Apple M1 laptop.
 
+Each question below is decided by rules written into the script's docstring and
+committed BEFORE the run that answers it, so a failed rule stays failed. Where a
+result is negative or undecidable, it is reported as such.
+
+**What holds so far**
+
+- The compacted network (`OR 1%`, half the baseline's edges) keeps the
+  baseline's readout responses far better than random pruning of equal size —
+  [Pipeline](#pipeline).
+- Training through the fixed point works: implicit gradients are correct and a
+  second-order optimizer recovers known parameters — [Step 1](#step-1-does-training-through-the-fixed-point-work).
+- The untrained wiring already carries taste identity to descending neurons,
+  including from neurons never used in training; shuffled wiring does not —
+  [Step 2a](#step-2a-can-taste-be-read-from-the-untrained-network).
+
+**What does not, and what is still open**
+
+- Similarity to the real fly is NOT established: on 149 experimental outcomes
+  the untrained model scores near chance —
+  [Result 1](#result-1-similarity-to-the-real-fly-could-not-be-established).
+- Whether compaction preserves *behaviour* is undecided. Both task sets that
+  tried to answer it could not separate compaction from random pruning
+  ([Result 2](#result-2-agreement-with-the-baseline), Step 2a rule R4).
+- Rules for two further runs are committed and their results are not in yet:
+  `step2a_mix.py` (a mixture task meant to judge compaction) and
+  `step2b_taste.py` (training the gains on the Step 2a task).
+
 ## Setup
 
 ```sh
 uv sync                 # base: numpy, pandas, pyarrow, scipy (Python 3.13)
-uv sync --extra torch   # plus PyTorch with MPS
-uv run python <script>
+uv sync --extra torch   # plus PyTorch with MPS; needed for steps 1 and 2
 ```
+
+Every script reads and writes the current directory, so all of them run from
+`data/`:
+
+```sh
+cd data
+uv run --project .. python ../scripts/<script>.py                 # pipeline, tasks
+uv run --project .. --extra torch python ../scripts/<script>.py   # steps 1 and 2
+```
+
+## Terms
+
+| term | meaning |
+|---|---|
+| baseline | the network at `weight >= 3`, 10.5 M edges — what every variant is compared against |
+| OR 1% | the compacted network: `weight >= 3` and at least 1% of either endpoint's synapse budget, 5.5 M edges |
+| random control | baseline edges subsampled at random to OR 1%'s size — does the rule matter, or only the size? |
+| shuffled | presynaptic partners permuted across baseline edges: same degrees and counts, different wiring |
+| readout neurons | descending, motor, efferent and endocrine neurons — the network's output side |
+| test A / test B | classification on neurons also used in training / only on held-out neurons |
 
 ## Compute
 
@@ -47,10 +93,7 @@ The first four scripts build the neuron-to-neuron network and measure it:
   baseline, the compacted networks and random edge subsets of the same size,
   and compares their responses on readout neurons.
 
-They read and write the current directory, so run them from `data/`:
-
 ```sh
-cd data
 uv run --project .. python ../scripts/fetch.py          # ~1.1 GB, ~2 min
 uv run --project .. python ../scripts/retention.py
 uv run --project .. python ../scripts/retention_or.py
@@ -67,7 +110,6 @@ size 0.779 / 0.563. 77 s at 1.41 GB.
 Downloads go to `data/shiu/` (see each script's docstring for sources):
 
 ```sh
-cd data
 uv run --project .. python ../scripts/shiu_tasks.py                        # -> shiu_tasks.json
 uv run --project .. python ../scripts/lb3_split.py                         # sugar/water check
 uv run --project .. python ../scripts/score_shiu.py 0.9 0.5 --seeds=10     # -> score_shiu.json, ~7 min
@@ -154,12 +196,11 @@ implicit differentiation at the fixed point (adjoint iteration), with no
 unrolling.
 
 ```sh
-cd data
-uv run --project .. python ../scripts/step1_gradcheck.py              # 1a, ~1.5 min
-uv run --project .. python ../scripts/step1_recovery.py few sub      # 1b, Adam
-uv run --project .. python ../scripts/step1_identify.py few sub      # 1c, spectrum + Levenberg-Marquardt
-uv run --project .. python ../scripts/step1_identify.py tens sub 25
-uv run --project .. python ../scripts/step1_identify.py few full 15
+uv run --project .. --extra torch python ../scripts/step1_gradcheck.py         # 1a, ~1.5 min
+uv run --project .. --extra torch python ../scripts/step1_recovery.py few sub  # 1b, Adam
+uv run --project .. --extra torch python ../scripts/step1_identify.py few sub  # 1c, spectrum + Levenberg-Marquardt
+uv run --project .. --extra torch python ../scripts/step1_identify.py tens sub 25
+uv run --project .. --extra torch python ../scripts/step1_identify.py few full 15
 ```
 
 ### 1a. Gradients are correct
@@ -203,13 +244,19 @@ its start, every alpha within 0.01, s within 1%, b within 0.005.
   with implicit Jacobian-vector products, or reparameterisation; plain Adam is
   expected to stall.
 
-## Step 2a: can taste be read from the untrained network?
+## Step 2: classification
+
+Step 1 used targets the model generated itself. Step 2 gives it a task with many
+labelled samples: name the taste from the network's output. Step 2a asks what
+the untrained wiring already does; Step 2b (rules committed, results not in yet)
+trains the gains on the same task and split.
+
+### Step 2a: can taste be read from the untrained network?
 
 Before training anything, check whether the network as wired already carries
 taste to its output. Rules were committed (`91bd611`) before the run.
 
 ```sh
-cd data
 uv run --project .. --extra torch python ../scripts/step2a_taste.py --seeds=10   # ~15 min, 1.58 GB
 ```
 
@@ -250,8 +297,17 @@ pools neurons of the same taste. Chance is 0.25.
 
 ## Layout
 
-- `scripts/` — pipeline, task and training scripts; run from `data/`
-- `data/`    — downloaded tables, caches, logs and result JSON; not committed
+- `data/` — downloaded tables, caches, logs and result JSON; not committed.
+  Every script writes its console output next to its results there.
+- `scripts/` — run from `data/`, in this order:
+
+| step | scripts |
+|---|---|
+| network | `fetch.py`, `retention.py`, `retention_or.py`, `compare_steady.py`, `bench_solve.py` |
+| ground truth | `shiu_tasks.py`, `lb3_split.py`, `score_shiu.py` |
+| model | `fpmodel.py` — the trainable rate model, imported by every step-1 and step-2 script |
+| step 1 | `step1_gradcheck.py`, `step1_recovery.py`, `step1_identify.py` |
+| step 2 | `step2a_taste.py`, `step2a_mix.py`, `step2b_taste.py` |
 
 ## License
 
