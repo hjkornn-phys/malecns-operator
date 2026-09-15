@@ -20,10 +20,11 @@ separate record kept beside this repository, in
 - The untrained wiring already carries taste identity to descending neurons,
   including from neurons never used in training; shuffled wiring does not —
   [Step 2a](#step-2a-can-taste-be-read-from-the-untrained-network).
-- **Training on the taste task improves agreement with the real fly, and only on
-  the real wiring.** Gains fitted to a four-way taste readout raise balanced
-  accuracy on the 149 held-out experimental outcomes from 0.669 to 0.715, while
-  the same training on shuffled wiring lands at 0.659, below where it started —
+- Training on the taste task moves agreement with the real fly in the right
+  direction, on the real wiring — balanced accuracy on the 149 held-out
+  experimental outcomes goes 0.669 to 0.715 — but **the effect is six changed
+  answers out of 149 and does not reach significance** (exact McNemar p = 0.219),
+  so it is suggestive and not established —
   [Step 3](#step-3-does-the-trained-model-score-better-against-the-real-fly).
 - Three pheromone-receptor channels that look alike — all gustatory, all on legs
   and wings, all of similar size — are routed to different places by the wiring,
@@ -441,13 +442,44 @@ uv run --project .. python ../scripts/step3_rescore.py --seeds=10   # ~11 min
   of its own baseline's answers; the ten random seeds change 9 to 19.
 - **TRAINING IMPROVED BIOLOGICAL SIMILARITY: True.**
 
+### How large the effect actually is
+
+The verdicts above are what the committed rules asked, and they stand. They do
+not carry an uncertainty estimate, and the rules never asked for one. Computed
+afterwards from the saved per-outcome answers, which needs no re-run:
+
+| comparison | answers changed, of 149 | right / wrong | exact McNemar |
+|---|---|---|---|
+| untrained → trained | **6** | 5 / 1 | **p = 0.219** |
+| shuffled-trained → trained | 7 | 6 / 1 | p = 0.125 |
+| untrained → shuffled-trained | **1** | 0 / 1 | p = 1.000 |
+
+**Training changed six answers out of 149, and the improvement does not reach
+significance on the natural paired test.** The +0.046 in balanced accuracy comes
+from the model answering "yes" 33 times instead of 27, which moves the minority
+class a long way for a small number of flips; raw accuracy moves +0.027, or four
+answers.
+
+The shuffled control is weaker still: gains trained on scrambled wiring differ
+from the untrained model on **one answer**. Read plainly, that control shows the
+shuffled gains do almost nothing to these 149 outcomes — not that they actively
+damage agreement with the fly.
+
+So what Step 3 establishes is narrower than its verdict names. The direction is
+consistent across accuracy, balanced accuracy, and both controls, and every one
+of those margins is inside what six coin flips could produce. **This is a
+suggestive result that needs a larger or better-resolved test set, not an
+established one.**
+
+S1's rule — "balanced accuracy differs by more than 0.01" — is the reason this
+had to be worked out afterwards. No lookup asked what balanced-accuracy movement
+149 paired outcomes can resolve before that 0.01 was chosen, and 0.01 turns out
+to be far under the noise floor. That is the same mistake as Step 4's E1, made
+about a threshold that was too *low* rather than unreachably high.
+
 What this does not say. 0.715 is still far from reproducing the fly, and
-answering "no" to everything scores 0.500. Balanced accuracy on 149 outcomes is a
-coarse instrument, the gains are 34 numbers and not a mechanism, and nothing here
-identifies *which* outcomes changed or why. What it does say is that a task with
-many labelled samples can move a connectome model toward the biology at all, which
-[Result 1](#result-1-similarity-to-the-real-fly-could-not-be-established) left
-open, and that the real wiring is required for it.
+answering "no" to everything scores 0.500. The gains are 34 numbers and not a
+mechanism, and nothing here identifies which outcomes changed or why.
 
 All five verdicts were predicted before the run and **three of the predictions
 were wrong** — S1, S2, and S3's claimed size. The reasoning that failed, twice in
