@@ -34,9 +34,16 @@
 
     <label for="group">fire a stimulus</label>
     <select id="group"></select>
-    <div class="row"><button id="fire">fire</button><button id="play" disabled>replay</button></div>
+    <button id="fire">fire</button>
+    <div class="sub" id="frameinfo" style="margin:6px 0 0">—</div>
+
+    <label for="frame">synaptic depth (not time)</label>
     <input id="frame" type="range" min="0" max="0" value="0" disabled>
-    <div class="sub" id="frameinfo" style="margin:4px 0 0">—</div>
+    <div class="row"><button id="play" disabled>step through depth</button><button id="final" disabled>converged</button></div>
+    <div class="sub" style="margin-top:6px">The converged state is the result. Dragging left shows the response
+      restricted to neurons within k synapses of the stimulus — the solver starts at h = 0, so iterate k reaches
+      exactly k−1 hops. That reachability is real; the brightness at an intermediate hop is not a per-hop
+      contribution, because inhibition and the ReLU make the iterates something other than a partial sum.</div>
 
     <label for="bright">brightness</label>
     <input id="bright" type="range" min="1" max="40" value="14">
@@ -154,7 +161,10 @@ function showFrame(i) {
   if (!frames) return;
   act = frames[i]; draw();
   $("frame").value = i;
-  $("frameinfo").textContent = `iteration ${iters[i]} of ${iters[iters.length - 1]} · frame ${i + 1}/${frames.length}`;
+  const last = i === frames.length - 1;
+  $("frameinfo").textContent = last
+    ? `converged · ${iters[i]} iterations · this is the result`
+    : `within ${iters[i] - 1} synapse${iters[i] - 1 === 1 ? "" : "s"} of the stimulus · not a time step`;
 }
 
 async function doFire() {
@@ -167,19 +177,20 @@ async function doFire() {
   $("s-peak").textContent = r.peak.toFixed(4); $("s-scale").textContent = r.scale.toExponential(2);
   $("s-vis").textContent = r.visible.toLocaleString() + " / " + meta.placed.toLocaleString();
   $("s-it").textContent = r.total_iters; $("s-ms").textContent = r.ms; $("s-resp").textContent = "—";
-  $("fire").disabled = false;
-  play();
+  $("final").disabled = false; $("fire").disabled = false;
+  showFrame(frames.length - 1);            // the converged state is what a fire shows by default
 }
 
-function play() {
+function play() {                          // walk outward by synaptic depth, ending on the converged state
   clearInterval(timer);
   let i = 0;
   showFrame(0);
-  timer = setInterval(() => { i++; if (i >= frames.length) { clearInterval(timer); return; } showFrame(i); }, 180);
+  timer = setInterval(() => { i++; if (i >= frames.length) { clearInterval(timer); return; } showFrame(i); }, 320);
 }
 
 $("fire").onclick = doFire;
 $("play").onclick = play;
+$("final").onclick = () => { clearInterval(timer); showFrame(frames.length - 1); };
 $("frame").oninput = e => { clearInterval(timer); showFrame(+e.target.value); };
 $("bright").oninput = draw;
 

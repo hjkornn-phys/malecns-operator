@@ -20,8 +20,13 @@ the raw maximum and the percentile are reported so the numbers stay recoverable 
 The stimulated gustatory bodies themselves have no somaLocation — their somata sit outside the annotated
 volume — so the first visible activity is already one synapse downstream.
 
-/fire replays the solve: the iteration starts at h = 0, so its iterates ARE the propagation, and they are
-sampled log-spaced because the response is essentially complete by iteration ~9 of 62.
+/fire returns the converged response — the only thing any result in this repo is based on — and, as an
+optional aid, the iterates that led to it. Read those iterates carefully. The model has NO time axis; the
+iteration is a solver converging to a steady state, not dynamics, and the path it takes depends on starting
+at h = 0. What IS a property of the network: iterate k is nonzero only on neurons within k-1 synapses of the
+stimulus, so the iterates say how many synapses deep the response has to travel. Their MAGNITUDES are not a
+path-length decomposition — inhibitory edges and the ReLU mean an iterate is not a partial sum and need not
+grow monotonically. So: hop reachability, yes; timing or per-hop contribution, no.
 
 Serves scripts/viewer.html at http://127.0.0.1:PORT/ and answers:
   GET  /meta  model settings, neuron counts and the stimulus groups (JSON)
@@ -138,7 +143,8 @@ def step(text, temperature=1.0):
 
 
 def fire(group=None, text=None, frames=14):
-    """Replay the solve as a propagation: log-spaced iterates, one shared scale so the animation does not flicker."""
+    """Converged response, plus log-spaced iterates on one shared scale. `iters[-1]` is the converged frame and
+    the only one that is a result; the earlier ones show how many synapses deep the response reaches."""
     t0 = time.time()
     if group:
         u = np.zeros(N, np.float32); u[GROUPS[group]] = 1.0
