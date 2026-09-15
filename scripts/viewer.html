@@ -1,0 +1,147 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>MaleCNS byte loop</title>
+<style>
+  :root { color-scheme: dark; --bg:#0c0e12; --panel:#141820; --line:#232a36; --ink:#e7ecf5; --dim:#8d99ad; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  #wrap { display:flex; height:100vh; }
+  #view { flex:1; position:relative; min-width:0; }
+  canvas { display:block; width:100%; height:100%; cursor:grab; }
+  canvas:active { cursor:grabbing; }
+  #side { width:340px; border-left:1px solid var(--line); background:var(--panel); padding:14px; overflow-y:auto; }
+  h1 { font-size:13px; margin:0 0 2px; letter-spacing:.04em; text-transform:uppercase; }
+  .sub { color:var(--dim); margin:0 0 14px; font-size:11px; }
+  label { display:block; color:var(--dim); margin:12px 0 4px; font-size:11px; text-transform:uppercase; letter-spacing:.04em; }
+  textarea, input, button { font:inherit; color:var(--ink); background:#0e1117; border:1px solid var(--line); border-radius:6px; padding:7px 9px; width:100%; }
+  textarea { resize:vertical; min-height:56px; }
+  button { background:#1d2432; cursor:pointer; margin-top:10px; }
+  button:hover:not(:disabled) { background:#27303f; }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:8px; }
+  #out { white-space:pre-wrap; word-break:break-all; background:#0e1117; border:1px solid var(--line); border-radius:6px; padding:9px; min-height:80px; max-height:190px; overflow-y:auto; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; }
+  td { padding:2px 0; color:var(--dim); font-size:11px; }
+  td:last-child { text-align:right; color:var(--ink); }
+  .warn { margin-top:14px; padding:9px; border:1px solid #5a4420; background:#211a0e; border-radius:6px; color:#e6c98a; font-size:11px; }
+  #hud { position:absolute; left:12px; top:12px; color:var(--dim); font-size:11px; pointer-events:none; }
+</style>
+<div id="wrap">
+  <div id="view"><canvas id="c"></canvas><div id="hud">drag to rotate · wheel to zoom</div></div>
+  <div id="side">
+    <h1>MaleCNS byte loop</h1>
+    <p class="sub" id="meta">loading…</p>
+
+    <label for="seed">input text</label>
+    <textarea id="seed">안녕하세요</textarea>
+
+    <label>tokens / temperature</label>
+    <div class="row"><input id="n" type="number" value="12" min="1" max="200"><input id="temp" type="number" value="1.0" step="0.1" min="0.1"></div>
+    <div class="row"><button id="go">generate</button><button id="stop" disabled>stop</button></div>
+
+    <label>output</label>
+    <div id="out"></div>
+
+    <table>
+      <tr><td>last byte</td><td id="s-byte">—</td></tr>
+      <tr><td>solver iterations</td><td id="s-it">—</td></tr>
+      <tr><td>ms / token</td><td id="s-ms">—</td></tr>
+      <tr><td>neurons responding</td><td id="s-resp">—</td></tr>
+    </table>
+
+    <div class="warn"><b>Untrained.</b> The readout is a fixed random projection and the byte mappings are
+      engineered, so the emitted bytes carry no meaning. The activation you see is a real steady-state solve
+      on the real wiring.</div>
+  </div>
+</div>
+<script>
+const canvas = document.getElementById("c"), ctx = canvas.getContext("2d");
+let pos = null, act = null, meta = null, W = 0, H = 0, img = null;
+let yaw = 0.6, pitch = 0.1, zoom = 1.0, drag = null, stopped = false;
+
+function resize() {
+  const r = canvas.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+  W = canvas.width = Math.max(1, Math.round(r.width * dpr));
+  H = canvas.height = Math.max(1, Math.round(r.height * dpr));
+  img = ctx.createImageData(W, H);
+  draw();
+}
+addEventListener("resize", resize);
+
+canvas.addEventListener("pointerdown", e => { drag = [e.clientX, e.clientY]; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener("pointermove", e => {
+  if (!drag) return;
+  yaw += (e.clientX - drag[0]) * 0.01; pitch += (e.clientY - drag[1]) * 0.01;
+  pitch = Math.max(-1.5, Math.min(1.5, pitch)); drag = [e.clientX, e.clientY]; draw();
+});
+addEventListener("pointerup", () => drag = null);
+canvas.addEventListener("wheel", e => { e.preventDefault(); zoom *= Math.exp(-e.deltaY * 0.0012); draw(); }, { passive: false });
+
+// activation 0..255 -> dark blue / cyan / amber ramp; inactive neurons stay a faint grey
+function color(v) {
+  if (v < 6) return [58, 66, 82];
+  const t = v / 255;
+  if (t < 0.5) { const s = t * 2; return [30 + 20 * s, 90 + 140 * s, 160 + 80 * s]; }
+  const s = (t - 0.5) * 2; return [50 + 205 * s, 230 - 60 * s, 240 - 190 * s];
+}
+
+function draw() {
+  if (!pos || !img) return;
+  const px = img.data; px.fill(0);
+  for (let i = 3; i < px.length; i += 4) px[i] = 255;
+  const depth = new Float32Array(W * H).fill(Infinity);
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const scale = 0.42 * Math.min(W, H) * zoom, ox = W / 2, oy = H / 2;
+  const n = pos.length / 3;
+  for (let i = 0; i < n; i++) {
+    const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2];
+    const x1 = x * cy + z * sy, z1 = -x * sy + z * cy;
+    const y1 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+    const sx = (ox + x1 * scale) | 0, sy2 = (oy + y1 * scale) | 0;
+    if (sx < 0 || sy2 < 0 || sx >= W || sy2 >= H) continue;
+    const k = sy2 * W + sx;
+    if (z2 >= depth[k]) continue;
+    depth[k] = z2;
+    const v = act ? act[i] : 0, c = color(v), fade = 0.72 + 0.28 * (1 - Math.min(1, (z2 + 1) / 2));
+    const o = 4 * k;
+    px[o] = c[0] * fade; px[o + 1] = c[1] * fade; px[o + 2] = c[2] * fade;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+const $ = id => document.getElementById(id);
+const out = $("out");
+
+async function boot() {
+  meta = await (await fetch("/meta")).json();
+  $("meta").textContent = `${meta.rule} · ${meta.edges.toLocaleString()} edges · ${meta.placed.toLocaleString()} placed neurons · untrained`;
+  pos = new Float32Array(await (await fetch("/pos")).arrayBuffer());
+  resize();
+}
+
+async function run() {
+  stopped = false; $("go").disabled = true; $("stop").disabled = false;
+  let text = $("seed").value, emitted = "";
+  out.textContent = "";
+  const n = Math.max(1, Math.min(200, +$("n").value || 1)), temp = +$("temp").value || 1;
+  for (let i = 0; i < n && !stopped; i++) {
+    const r = await (await fetch("/step", { method: "POST", headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ text, temperature: temp }) })).json();
+    const bin = atob(r.act), a = new Uint8Array(bin.length);
+    for (let k = 0; k < bin.length; k++) a[k] = bin.charCodeAt(k);
+    act = a; draw();
+    const ch = new TextDecoder("utf-8").decode(new Uint8Array([r.byte]));
+    text += ch; emitted += ch;
+    out.textContent = emitted + " ".repeat(0);
+    out.scrollTop = out.scrollHeight;
+    $("s-byte").textContent = r.byte + " (0x" + r.byte.toString(16).padStart(2, "0") + ")";
+    $("s-it").textContent = r.iters; $("s-ms").textContent = r.ms;
+    $("s-resp").textContent = r.responding.toLocaleString();
+  }
+  $("go").disabled = false; $("stop").disabled = true;
+}
+
+$("go").onclick = run;
+$("stop").onclick = () => { stopped = true; };
+boot();
+</script>
