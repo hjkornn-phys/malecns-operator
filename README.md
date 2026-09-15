@@ -541,6 +541,71 @@ P2 passes: all three channels beat the 402 unlabelled leg and wing GRNs, so the
 anatomical confound is at least partly controlled. It is the only thing this run
 establishes.
 
+## Step 7: IR52b routes into the male-specific circuitry, ppk23 and ppk25 away from it
+
+Step 6's rules failed and stand failed. Its numbers were then read exploratorily
+and showed the primary readout had been the wrong one: on pC1 everything sat
+inside the shuffled range, while on the 1,258 male-specific neurons two channels
+sat well outside it in opposite directions. That reading generated a hypothesis,
+which this run tests. Rules and the lookup that set them were committed
+(`51a00eb`) before the run.
+
+```sh
+uv run --project .. python ../scripts/step7_ir52b.py --seeds=20   # ~8 min, 1.2 GB
+```
+
+Thresholds here are rank tests — above or below all 20 shuffled seeds, one-sided
+p ~ 1/21 ~ 0.048 — because the lookup put the effect at 2.3x the shuffled
+maximum, so no magnitude had to be guessed. The wing sets are 96 bodies each, so
+nothing is subsampled on the primary test.
+
+Share of a channel's drive landing on the 1,258 male-specific neurons:
+
+| channel | wing (96) | shuffled range | leg (130) | shuffled range |
+|---|---|---|---|---|
+| **IR52b** | **+0.766** | +0.243 … +0.499 | **+0.638** | +0.144 … +0.327 |
+| ppk23 | +0.220 | +0.335 … +0.697 | -0.130 | +0.251 … +0.457 |
+| ppk25 | +0.214 | +0.366 … +0.641 | -0.614 | +0.243 … +0.425 |
+
+| rule | result |
+|---|---|
+| Q0 calibration (replication, not evidence) | pass |
+| Q1 the test: IR52b above all 20 shuffled seeds, wing | **pass** |
+| Q2 ppk23 below all 20 shuffled seeds, wing | pass |
+| Q3 dissociation: IR52b above ppk23 and ppk25 | **pass** |
+| Q4 side | **not evaluable** |
+| Q5 compaction keeps the direction | pass |
+| hypothesis supported (Q1 and Q3 and Q4) | **undefined** |
+
+- **Q4 is not a failure, it is a defect.** The side split used `somaSide`, which
+  is null for every one of these gustatory neurons, so those columns were empty
+  and the shares came back `nan`. The composite is therefore undefined rather
+  than False, and Q1, Q3 and Q5 stand on their own. `step7b_sides.py` redoes the
+  split on `rootSide`, which is populated 48/48 and 65/65.
+- The dissociation is two against one and it is the wiring that makes it.
+  Shuffling the connectome **raises** ppk23 and ppk25's routing to male-specific
+  neurons above what the real wiring gives, and **lowers** IR52b's. So the real
+  wiring channels IR52b toward this circuitry and the ppk channels away from it;
+  neither is a matter of the channels' size or of their overall drive.
+- It holds on both sensilla. IR52b is above its null on wing and on leg; ppk23
+  and ppk25 are below theirs on both. The raw sign differs between leg and wing
+  for ppk23 (-0.130 against +0.220) but its position relative to the null does
+  not, which is the comparison that means anything: a share is normalised by the
+  whole network's mean response and does not hold still across stimulus size.
+- **The literature agrees on IR52b and disagrees on ppk23.** Ir52 receptors
+  mediate detection of courtship-stimulating pheromones (Current Biology 2024),
+  and Ir52b marks populations distinct from ppk23 and ppk25. But ppk23 neurons
+  are *required* for male courtship (J Neurosci 32:4665), and this model sends
+  them away from male-specific circuitry. That discordance is recorded, not
+  resolved, and was deliberately kept out of the headline verdict.
+- pC1, the readout step 6 built its rules on, still shows nothing: IR52b -0.204
+  there. The effect lives in the wider male-specific population.
+
+Routing is not behaviour, `receptorType` is putative, and the hypothesis came
+from step 6's own data, so this is a replication on a different stimulus set
+rather than a clean out-of-sample test. The predictions registered before the run
+are in `PREDICTIONS.md`.
+
 ## Layout
 
 - `data/` — downloaded tables, caches, logs and result JSON; not committed.
@@ -557,6 +622,7 @@ establishes.
 | step 4 | `step4_size.py` |
 | step 5 | `step5_gapjunction.py` |
 | step 6 | `step6_pheromone.py` |
+| step 7 | `step7_ir52b.py`, `step7b_sides.py` |
 | viewer data | `viz_export.py` |
 
 ### Viewer data
