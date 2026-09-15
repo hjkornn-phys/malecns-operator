@@ -122,6 +122,73 @@ What the tasks can measure is whether a network gives the baseline's answers.
   cutoff at both gains.
 - Agreement with the baseline is not agreement with the fly (Result 1).
 
+## Step 1: does training through the fixed point work?
+
+The long-term plan is to train this model (then classification tasks). Step 1
+checks the training mechanism on its own terms, with targets we generated
+ourselves. It says nothing about similarity to the real fly.
+
+**Model** (`scripts/fpmodel.py`):
+
+    h* = ReLU(gamma[superclass(post)] * (W0 @ (alpha[transmitter(pre)] * h*)) + s * u + b)
+
+`W0` is the signed count-fraction matrix. `alpha` (5 transmitter
+classes) and `gamma` (per superclass) pass through sigmoids so every gain is
+below 0.99 and the iteration always contracts. A global gain `g` is absorbed into
+`alpha * gamma`, and a threshold `theta` would only enter as `b - theta`, so
+neither is a separate parameter. Gradients use implicit differentiation at the
+fixed point (adjoint iteration), with no unrolling.
+
+```sh
+cd data
+uv run --project .. python ../scripts/step1_gradcheck.py              # 1a, ~1.5 min
+uv run --project .. python ../scripts/step1_recovery.py few sub      # 1b, Adam
+uv run --project .. python ../scripts/step1_identify.py few sub      # 1c, spectrum + Levenberg-Marquardt
+uv run --project .. python ../scripts/step1_identify.py tens sub 25
+uv run --project .. python ../scripts/step1_identify.py few full 15
+```
+
+### 1a. Gradients are correct
+
+| check | parameters | max relative error | limit |
+|---|---|---|---|
+| subnetwork (6k neurons), implicit vs finite differences | 25 | 2.2e-5 | 1e-4 |
+| subnetwork, implicit vs backprop through the unrolled iteration | 25 | 2.8e-13 | 1e-6 |
+| full baseline (10.5 M edges), implicit vs finite differences | 10 | 1.4e-8 | 1e-3 |
+
+Full baseline, float32, 29 stimuli: forward + backward 6.9 s, 1.17 GB peak
+(8 GB M1).
+
+### 1b/1c. Known parameters are recovered, with a second-order optimizer
+
+A teacher model with known parameters generates responses; a student starts
+from perturbed parameters (raw values + N(0, 0.7)) and trains on them.
+Held-out stimuli are different sensory groups. Pass: held-out loss <= 1e-3 of
+its start, every alpha within 0.01, s within 1%, b within 0.005.
+
+| run | params | optimizer | held-out loss, end / start | max alpha error | result |
+|---|---|---|---|---|---|
+| subnetwork | 7 | Adam, 300 steps | 1.3e-5 | 0.32 | fail |
+| subnetwork | 24 (+ gamma per superclass) | Adam, 300 steps | 3.4e-4 | 0.12 | fail |
+| subnetwork | 7 | LM, 5 iterations | 6.1e-26 | 2.5e-11 | pass |
+| subnetwork | 24 | LM, 25 iterations | 8.2e-18 | 2.6e-8 (gamma 1.3e-7) | pass |
+| full baseline (166,700 neurons), loss on 37,328 readout outputs | 7 | LM, 6 iterations | 7.9e-23 | 2.2e-8 | pass |
+
+- Adam matches the outputs but stalls short of the parameters. The model is
+  badly conditioned: `J^T J` condition number 2.2e6 for 7 parameters and
+  1.25e11 for 24, with the softest directions on transmitter classes and
+  superclasses that carry little synaptic weight.
+- Levenberg-Marquardt from the same start recovers every parameter, including
+  gamma for superclasses with a single neuron in the subnetwork. By the rule
+  fixed in `step1_identify.py`: identifiable; the optimizer was the problem.
+- On the full network LM also recovers all 7 parameters with the loss seen only
+  on readout neurons (condition number 4.07e8, softest direction alpha for
+  histamine; 825 s, 1.6 GB peak on the 8 GB M1). Adam was not run at full size.
+- LM here uses finite-difference Jacobians, affordable only for a few
+  parameters. Larger models (classification) will need L-BFGS, Gauss-Newton
+  with implicit Jacobian-vector products, or reparameterisation; plain Adam is
+  expected to stall.
+
 ## Layout
 
 - `data/`   — fetched tables and caches (`nn_edges.npz`); not committed
