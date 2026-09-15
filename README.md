@@ -3,6 +3,14 @@
 Network-model work on the MaleCNS v1.0 connectome: fetch, filter, compact,
 solve, compare against baseline.
 
+## Setup
+
+```sh
+uv sync                 # base: numpy, pandas, pyarrow, scipy (Python 3.13)
+uv sync --extra torch   # plus PyTorch with MPS
+uv run python <script>
+```
+
 ## Compute
 
 Default path: `pyarrow`, `pandas`, `numpy`,

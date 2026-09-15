@@ -1,0 +1,17 @@
+[project]
+name = "malecns-operator"
+version = "0.1.0"
+description = "Network-model work on the MaleCNS v1.0 connectome"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "numpy",
+    "pandas",
+    "pyarrow",
+    "scipy",
+]
+
+[project.optional-dependencies]
+torch = ["torch"]
+
+[tool.uv]
+package = false
