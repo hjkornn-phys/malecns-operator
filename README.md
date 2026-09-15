@@ -18,6 +18,14 @@ result is negative or undecidable, it is reported as such.
 - The untrained wiring already carries taste identity to descending neurons,
   including from neurons never used in training; shuffled wiring does not —
   [Step 2a](#step-2a-can-taste-be-read-from-the-untrained-network).
+- Three pheromone-receptor channels that look alike — all gustatory, all on legs
+  and wings, all of similar size — are routed to different places by the wiring,
+  by more than any of 20 degree-preserving rewirings, on both sensilla and on
+  each side's neurons alone —
+  [Step 7](#step-7-ir52b-routes-into-the-male-specific-circuitry-ppk23-and-ppk25-away-from-it).
+  What those places *mean* is open: the readout sets used there turned out not to
+  contain the ppk channels' published target, and that correction is recorded
+  with the result.
 
 **What does not, and what is still open**
 
@@ -70,7 +78,10 @@ A lookup may measure:
 - **scale and feasibility** — whether a stimulus of the intended size moves the
   intended readout at all, and what range that readout spans;
 - **items whose answer is already known** from the literature or from an earlier
-  scored task, which calibrate sign and magnitude.
+  scored task, which calibrate sign and magnitude;
+- **whether each category holds what it is assumed to hold** — that a readout set
+  contains the neurons the literature says carry the function, and that a channel
+  grouped under one label does not span opposite ones.
 
 A lookup may **not** measure the comparison the verdict is about. Setting the
 threshold from the effect under test is how a rule stops being a test. When only
@@ -89,6 +100,16 @@ What this would have caught:
   proboscis extension — which this repo had already measured, in Shiu task 5 — so
   it goes negative and fails the rule for the correct biological reason. A lookup
   on that known item would have split the grouping.
+- **Step 7, the reading of it.** The readout sets were audited for size, missing
+  labels and overlap, but never for whether they contained the neurons that
+  matter. The ppk channels' published target, PPN1 = `AN05B102a`, carries no
+  `dimorphism` or `fruDsx` annotation and so sat outside every readout, which
+  made "routed away from courtship circuitry" the wrong reading of a correct
+  measurement. Checking one named neuron against the sets would have caught it.
+
+The same mistake three times — bitter grouped with the appetitive channels, three
+receptor channels grouped as one, and a readout set that omitted the target — is
+one mistake: never asking whether a category holds what its name suggests.
 
 Both failures stand as recorded. A rule is not re-tuned once its run has been
 seen; a sharper question gets a new rule, committed before its own run.
@@ -584,9 +605,29 @@ Share of a channel's drive landing on the 1,258 male-specific neurons:
   split on `rootSide`, which is populated 48/48 and 65/65.
 - The dissociation is two against one and it is the wiring that makes it.
   Shuffling the connectome **raises** ppk23 and ppk25's routing to male-specific
-  neurons above what the real wiring gives, and **lowers** IR52b's. So the real
-  wiring channels IR52b toward this circuitry and the ppk channels away from it;
-  neither is a matter of the channels' size or of their overall drive.
+  neurons above what the real wiring gives, and **lowers** IR52b's. That is not a
+  matter of the channels' size or of their overall drive.
+
+**Correction, after checking the literature against the data.** This was first
+read here as the wiring channelling IR52b toward the courtship circuitry and the
+ppk channels away from it. That reading is wrong, and the readout definition is
+why. The published downstream partner of the ppk wing GRNs is PPN1, a
+courtship-promoting neuron, and MaleCNS carries it under a different name:
+`PPN1` appears in the `synonyms` of **`AN05B102a`**. The connectivity reproduces
+the literature exactly — `AN05B102a` is WG4's top target after WG4 itself at
+**8,138 synapses**, and a top target of WG3 at 5,701 — but `AN05B102a` has an
+empty `dimorphism` and an empty `fruDsx`, so it falls in **none** of this run's
+readout sets. Neither do WG3 and WG4's other leading targets (`IN05B002`,
+`IN05B011a`, `AN05B023b`).
+
+So the verdicts stand exactly as measured and are not re-tuned: the ppk channels
+do send a smaller share into the male-specific-**annotated** population than a
+rewiring does. What cannot be said is that they are routed away from courtship
+circuitry, because that population does not contain their principal target. The
+correction cuts both ways: IR52b's result likewise becomes a statement about the
+annotated population, not about courtship. What survives intact is that the three
+channels go to **different places** — WG1's leading targets are `AN23B002` and
+`AN05B023a`, not `AN05B102a` — and that the difference beats every rewiring.
 - It holds on both sensilla. IR52b is above its null on wing and on leg; ppk23
   and ppk25 are below theirs on both. The raw sign differs between leg and wing
   for ppk23 (-0.130 against +0.220) but its position relative to the null does
