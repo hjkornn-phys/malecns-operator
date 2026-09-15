@@ -289,7 +289,11 @@ pools neurons of the same taste. Chance is 0.25.
   bodies never used in training; with partners shuffled (same degrees, same
   counts) it does not.
 - It is uneven. Baseline test B recall: water 1.00, bitter 0.95, Ir94e 0.75,
-  **sugar 0.15** (34 of 40 held-out sugar samples called water).
+  **sugar 0.15** (34 of 40 held-out sugar samples called water). `viz_export.py`
+  says why: across descending neurons the sugar and water responses correlate at
+  r = 0.942, and 78 of the 133 descending neurons that respond to sugar also
+  respond to water. Bitter is independent of sugar (r = -0.018). At this
+  readout the two sweet-ish channels are close to one signal.
 - R4 fails because the task cannot separate pruning rules: OR 1% scored above
   the baseline, but 9 of 10 random seeds came within 0.05, and 160 test samples
   carry about ±0.07 of sampling noise. It is not evidence that compaction hurts.
@@ -353,6 +357,24 @@ network's answer differs from the baseline's, paired over the same samples.
 | model | `fpmodel.py` — the trainable rate model, imported by every step-1 and step-2 script |
 | step 1 | `step1_gradcheck.py`, `step1_recovery.py`, `step1_identify.py` |
 | step 2 | `step2a_taste.py`, `step2a_mix.py`, `step2b_taste.py` |
+| viewer data | `viz_export.py` |
+
+### Viewer data
+
+`viz_export.py` writes `viz_taste.npz` (~7 MB, 8 s): soma positions and taste
+responses for the 139,662 of 166,700 neurons that have a `somaLocation`, plus
+optional animation frames of the fixed-point iteration, which starts at h = 0
+and so spreads outward from the stimulated neurons.
+
+```sh
+uv run --project .. python ../scripts/viz_export.py --frames=16
+```
+
+The file carries positions, per-stimulus responses, cell-type and superclass
+labels, descending/readout flags, and a `meta` JSON of the model settings, so a
+viewer needs no connectome data of its own. Neurons without a position are still
+simulated — they carry the dynamics — but are not exported, since a viewer
+cannot place them. The script measures and writes; it draws nothing.
 
 ## License
 
