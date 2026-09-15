@@ -22,6 +22,19 @@ PyTorch is optional and only worth it where it wins:
 
 Benchmark CPU vs MPS before adopting torch for sparse neuron-level work.
 
+## Pipeline
+
+The pipeline scripts in `scripts/` read and write the current
+directory, so run them from `data/`:
+
+```sh
+cd data
+uv run --project .. python ../scripts/fetch.py          # ~1.1 GB, ~2 min
+uv run --project .. python ../scripts/retention.py
+uv run --project .. python ../scripts/retention_or.py
+uv run --project .. python ../scripts/compare_steady.py 0.5 0.9
+```
+
 ## Layout
 
 - `data/`   — fetched tables and caches (`nn_edges.npz`); not committed
