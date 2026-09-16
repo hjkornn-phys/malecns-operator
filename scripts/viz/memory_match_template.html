@@ -18,7 +18,10 @@ body{background:var(--rail);color:var(--chalk);font-family:var(--body);font-size
 .wrap{max-width:1040px;margin:0 auto;padding-inline:18px;padding-block:26px 44px;display:flex;flex-direction:column;gap:18px}
 header{display:flex;flex-direction:column;gap:8px}
 .topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.lang{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .lang a{color:var(--chalk-dim);font-family:var(--mono);font-size:13px}
+.lang a.repo{color:var(--chalk);text-decoration:none;border:1px solid var(--edge);border-radius:7px;padding:4px 10px;background:var(--felt-deep)}
+.lang a.repo:hover,.lang a.repo:focus-visible{border-color:var(--chalk-dim)}
 .lang a:hover,.lang a:focus-visible{color:var(--chalk)}
 .stamp{align-self:flex-start;font-family:var(--mono);font-size:12px;letter-spacing:.06em;border:1.5px solid var(--bad);color:var(--bad);padding:3px 8px;border-radius:3px;transform:rotate(-1.5deg)}
 h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,5.2vw,50px);line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
@@ -90,6 +93,7 @@ button:disabled{opacity:.4;cursor:default}
 .notes{font-size:13px;color:var(--chalk-dim);max-width:74ch;display:flex;flex-direction:column;gap:8px}
 .notes p{margin:0}
 .notes strong{color:var(--chalk)}
+.notes a{color:var(--chalk)}
 .verdicts{display:flex;flex-wrap:wrap;gap:6px}
 .v{font-family:var(--mono);font-size:12px;border:1px solid var(--edge);border-radius:5px;padding:2px 7px}
 .v.t{color:var(--ok);border-color:var(--ok)} .v.x{color:var(--chalk-dim)}
@@ -104,7 +108,7 @@ button:disabled{opacity:.4;cursor:default}
 
 <div class="wrap">
   <header>
-    <div class="topline"><span class="stamp">{{stamp}}</span><nav class="lang">{{lang}}</nav></div>
+    <div class="topline"><span class="stamp">{{stamp}}</span><nav class="lang"><a class="repo" href="https://github.com/hjkornn-phys/malecns-operator">{{repo}}</a>{{lang}}</nav></div>
     {{h1}}
     {{lede}}
   </header>

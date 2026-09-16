@@ -17,7 +17,7 @@
   "note0": "    <p><strong>벤치마크.</strong> 파리들이 학습 때 맡지 않은 냄새 33가지를, 학습 때 쓰지 않은 후각 뉴런으로 보여주는 1,000문항이에요(저장소 10단계의 test B). 파리마다 표시한 \"벤치마크\" 정답률은 이 1,000문항 전체 기준이고, \"이번 판\"은 지금 덱 160문항 기준이에요.</p>\n",
   "note1": "    <p><strong>결과를 읽는 법.</strong> 진짜 뇌 파리는 처음 맡는 냄새를 처음 쓰는 후각 뉴런으로 받아도 같음/다름을 맞혀요. 뒤섞인 뇌 파리와 뇌 없이 기억만 쓰는 파리는 학습 때 본 카드에서조차 우연 수준이라(학습 대신 외우기만 함), 이 게임으로는 \"연결 구조 덕분인가\"를 판정할 수 없었어요(판정 불가). 메모리 없이 두 카드의 뇌 반응을 코사인 유사도로만 비교하면 진짜 뇌는 같은/다른 냄새를 AUC 0.947로 가르고 뒤섞인 뇌는 0.514예요 — 결과를 본 뒤 한 탐색이라 증거가 아니라 다음 실험의 가설이에요.</p>\n",
   "note2": "    <p><strong>무엇이 진짜이고 무엇이 연출인가.</strong> 한 번의 비교는 벤치마크의 실제 문항 하나예요: 앞 카드 냄새를 한 무리의 후각 뉴런으로, 빈 프레임 1개 뒤 이번 카드 냄새를 학습 때 쓰지 않은 뉴런으로 받고 답했어요(초기화 씨앗 3개의 평균 확률, 0.5 기준). 이어지는 카드 흐름은 앞 시행의 두 번째 냄새와 다음 시행의 첫 냄새가 같은 시행끼리 이어 붙인 거라, 모델은 비교마다 뉴런을 새로 뽑고 메모리를 새로 시작했어요. 뒤섞인 뇌 파리는 성적이 아니라 번호 순서로 고른 첫 번째 뒤섞기(씨앗 1000)예요. 카드 아래 막대는 수용체 23개 반응(위 흥분, 아래 억제)이고, 파리가 받는 입력은 이 패턴을 뉴런에 무작위로 나눠 넣은 것이라 막대와 똑같지는 않아요.</p>\n",
-  "note3": "    <p>출처와 라이선스. 수용체 반응값: Hallem &amp; Carlson (2006) <em>Cell</em> 125:143, DoOR.data v2.0.1 (Münch &amp; Galizia 2016, <em>Sci Rep</em> 6:21841) — CC BY-SA 4.0이고, 이 페이지의 카드 반응 패턴도 같은 조건으로 공유돼요. 커넥톰: MaleCNS v1.0 (Berg et al. 2026, <em>Cell</em>) — CC-BY 4.0. 코드와 규칙은 저장소 malecns-operator의 10단계에 있어요.</p>\n",
+  "note3": "    <p>출처와 라이선스. 수용체 반응값: Hallem &amp; Carlson (2006) <em>Cell</em> 125:143, DoOR.data v2.0.1 (Münch &amp; Galizia 2016, <em>Sci Rep</em> 6:21841) — CC BY-SA 4.0이고, 이 페이지의 카드 반응 패턴도 같은 조건으로 공유돼요. 커넥톰: MaleCNS v1.0 (Berg et al. 2026, <em>Cell</em>) — CC-BY 4.0. 코드와 규칙은 <a href=\"https://github.com/hjkornn-phys/malecns-operator\">malecns-operator 저장소</a>의 10단계에 있어요.</p>\n",
   "js": {
    "classes": {
     "ester": "에스터",
@@ -71,7 +71,8 @@
     "MEM-ONLY": "뇌 없이 기억만"
    }
   },
-  "lang": "<a href=\"index.html\" hreflang=\"en\" lang=\"en\">English</a>"
+  "lang": "<a href=\"index.html\" hreflang=\"en\" lang=\"en\">English</a>",
+  "repo": "코드와 규칙 · GitHub ↗"
  },
  "en": {
   "title": "<title>Fly Memory Match</title>",
@@ -91,7 +92,7 @@
   "note0": "    <p><strong>The benchmark.</strong> 1,000 items that show the flies 33 odors they never smelled in training, through olfactory receptor neurons never used in training (test B of step 10 in the repository). Each fly's \"Benchmark\" score is over all 1,000 items; \"This deck\" is over the 160 items in the deck being played.</p>\n",
   "note1": "    <p><strong>How to read it.</strong> The real-brain fly tells same from different even when a new odor arrives on neurons it never used. The shuffled-brain fly and the memory-without-a-brain fly are at chance even on the cards they trained on — they memorised instead of learning — so this game could not decide whether the wiring is what makes the difference (VOID). Comparing the two cards' brain responses by cosine similarity alone, with no memory, the real brain separates same from different odors at AUC 0.947 and the shuffled brain at 0.514; that was explored after the results, so it is a hypothesis for a next experiment, not evidence.</p>\n",
   "note2": "    <p><strong>What is real and what is staged.</strong> Every comparison is one real benchmark item: the model received the previous card's odor on one set of receptor neurons and, after one blank frame, this card's odor on neurons unused in training, and answered (mean probability over three initialisation seeds, split at 0.5). The continuous stream is stitched together from items whose second odor matches the next item's first odor, so the model drew fresh neurons and started a fresh memory for every comparison. The shuffled-brain fly is the first shuffle by number (seed 1000), not picked by score. The bars on each card are the responses of 23 receptors (up excitation, down inhibition); a fly's input spreads that pattern over randomly chosen neurons, so it is not identical to the bars. The flies, the table and the cards are illustration.</p>\n",
-  "note3": "    <p>Sources and licenses. Receptor responses: Hallem &amp; Carlson (2006) <em>Cell</em> 125:143, via DoOR.data v2.0.1 (Münch &amp; Galizia 2016, <em>Sci Rep</em> 6:21841), CC BY-SA 4.0; the response patterns on these cards are shared under the same license. Connectome: MaleCNS v1.0 (Berg et al. 2026, <em>Cell</em>), CC-BY 4.0. Code and rules: step 10 of the malecns-operator repository.</p>\n",
+  "note3": "    <p>Sources and licenses. Receptor responses: Hallem &amp; Carlson (2006) <em>Cell</em> 125:143, via DoOR.data v2.0.1 (Münch &amp; Galizia 2016, <em>Sci Rep</em> 6:21841), CC BY-SA 4.0; the response patterns on these cards are shared under the same license. Connectome: MaleCNS v1.0 (Berg et al. 2026, <em>Cell</em>), CC-BY 4.0. Code and rules: step 10 of the <a href=\"https://github.com/hjkornn-phys/malecns-operator\">malecns-operator repository</a>.</p>\n",
   "js": {
    "classes": {
     "ester": "ester",
@@ -145,6 +146,7 @@
     "MEM-ONLY": "Memory, no brain"
    }
   },
-  "lang": "<a href=\"ko.html\" hreflang=\"ko\" lang=\"ko\">한국어</a>"
+  "lang": "<a href=\"ko.html\" hreflang=\"ko\" lang=\"ko\">한국어</a>",
+  "repo": "Code & rules on GitHub ↗"
  }
 }

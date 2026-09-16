@@ -22,7 +22,10 @@ body{background:var(--rail);color:var(--chalk);font-family:var(--body);font-size
 .wrap{max-width:1040px;margin:0 auto;padding-inline:18px;padding-block:26px 44px;display:flex;flex-direction:column;gap:18px}
 header{display:flex;flex-direction:column;gap:8px}
 .topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.lang{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .lang a{color:var(--chalk-dim);font-family:var(--mono);font-size:13px}
+.lang a.repo{color:var(--chalk);text-decoration:none;border:1px solid var(--edge);border-radius:7px;padding:4px 10px;background:var(--felt-deep)}
+.lang a.repo:hover,.lang a.repo:focus-visible{border-color:var(--chalk-dim)}
 .lang a:hover,.lang a:focus-visible{color:var(--chalk)}
 .stamp{align-self:flex-start;font-family:var(--mono);font-size:12px;letter-spacing:.06em;border:1.5px solid var(--bad);color:var(--bad);padding:3px 8px;border-radius:3px;transform:rotate(-1.5deg)}
 h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,5.2vw,50px);line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
@@ -94,6 +97,7 @@ button:disabled{opacity:.4;cursor:default}
 .notes{font-size:13px;color:var(--chalk-dim);max-width:74ch;display:flex;flex-direction:column;gap:8px}
 .notes p{margin:0}
 .notes strong{color:var(--chalk)}
+.notes a{color:var(--chalk)}
 .verdicts{display:flex;flex-wrap:wrap;gap:6px}
 .v{font-family:var(--mono);font-size:12px;border:1px solid var(--edge);border-radius:5px;padding:2px 7px}
 .v.t{color:var(--ok);border-color:var(--ok)} .v.x{color:var(--chalk-dim)}
@@ -108,7 +112,7 @@ button:disabled{opacity:.4;cursor:default}
 
 <div class="wrap">
   <header>
-    <div class="topline"><span class="stamp">연출 · 파리 행동 예측 아님</span><nav class="lang"><a href="index.html" hreflang="en" lang="en">English</a></nav></div>
+    <div class="topline"><span class="stamp">연출 · 파리 행동 예측 아님</span><nav class="lang"><a class="repo" href="https://github.com/hjkornn-phys/malecns-operator">코드와 규칙 · GitHub ↗</a><a href="index.html" hreflang="en" lang="en">English</a></nav></div>
     <h1>파리의 메모리 매치</h1>
     <p class="lede">카드가 한 장씩 넘어올 때마다 "바로 앞 카드와 같은 냄새인가"에 답하는 게임이에요. 세 마리 파리의 답은 10단계 모델이 실제로 낸 답이에요. "진짜 뇌"는 실제 수컷 초파리 한 마리의 신경 연결 구조(MaleCNS 커넥톰)로 만든 모델이고, "뒤섞인 뇌"는 뉴런과 연결 개수는 그대로 두고 연결 상대만 뒤섞은 것, "뇌 없이 기억만"은 후각 뉴런 신호를 뇌를 거치지 않고 기억 장치에 바로 넣은 거예요. "나도 참가"를 켜면 파리들과 점수를 겨룰 수 있어요.</p>
   </header>
@@ -144,7 +148,7 @@ button:disabled{opacity:.4;cursor:default}
     <p><strong>벤치마크.</strong> 파리들이 학습 때 맡지 않은 냄새 33가지를, 학습 때 쓰지 않은 후각 뉴런으로 보여주는 1,000문항이에요(저장소 10단계의 test B). 파리마다 표시한 "벤치마크" 정답률은 이 1,000문항 전체 기준이고, "이번 판"은 지금 덱 160문항 기준이에요.</p>
     <p><strong>결과를 읽는 법.</strong> 진짜 뇌 파리는 처음 맡는 냄새를 처음 쓰는 후각 뉴런으로 받아도 같음/다름을 맞혀요. 뒤섞인 뇌 파리와 뇌 없이 기억만 쓰는 파리는 학습 때 본 카드에서조차 우연 수준이라(학습 대신 외우기만 함), 이 게임으로는 "연결 구조 덕분인가"를 판정할 수 없었어요(판정 불가). 메모리 없이 두 카드의 뇌 반응을 코사인 유사도로만 비교하면 진짜 뇌는 같은/다른 냄새를 AUC 0.947로 가르고 뒤섞인 뇌는 0.514예요 — 결과를 본 뒤 한 탐색이라 증거가 아니라 다음 실험의 가설이에요.</p>
     <p><strong>무엇이 진짜이고 무엇이 연출인가.</strong> 한 번의 비교는 벤치마크의 실제 문항 하나예요: 앞 카드 냄새를 한 무리의 후각 뉴런으로, 빈 프레임 1개 뒤 이번 카드 냄새를 학습 때 쓰지 않은 뉴런으로 받고 답했어요(초기화 씨앗 3개의 평균 확률, 0.5 기준). 이어지는 카드 흐름은 앞 시행의 두 번째 냄새와 다음 시행의 첫 냄새가 같은 시행끼리 이어 붙인 거라, 모델은 비교마다 뉴런을 새로 뽑고 메모리를 새로 시작했어요. 뒤섞인 뇌 파리는 성적이 아니라 번호 순서로 고른 첫 번째 뒤섞기(씨앗 1000)예요. 카드 아래 막대는 수용체 23개 반응(위 흥분, 아래 억제)이고, 파리가 받는 입력은 이 패턴을 뉴런에 무작위로 나눠 넣은 것이라 막대와 똑같지는 않아요.</p>
-    <p>출처와 라이선스. 수용체 반응값: Hallem &amp; Carlson (2006) <em>Cell</em> 125:143, DoOR.data v2.0.1 (Münch &amp; Galizia 2016, <em>Sci Rep</em> 6:21841) — CC BY-SA 4.0이고, 이 페이지의 카드 반응 패턴도 같은 조건으로 공유돼요. 커넥톰: MaleCNS v1.0 (Berg et al. 2026, <em>Cell</em>) — CC-BY 4.0. 코드와 규칙은 저장소 malecns-operator의 10단계에 있어요.</p>
+    <p>출처와 라이선스. 수용체 반응값: Hallem &amp; Carlson (2006) <em>Cell</em> 125:143, DoOR.data v2.0.1 (Münch &amp; Galizia 2016, <em>Sci Rep</em> 6:21841) — CC BY-SA 4.0이고, 이 페이지의 카드 반응 패턴도 같은 조건으로 공유돼요. 커넥톰: MaleCNS v1.0 (Berg et al. 2026, <em>Cell</em>) — CC-BY 4.0. 코드와 규칙은 <a href="https://github.com/hjkornn-phys/malecns-operator">malecns-operator 저장소</a>의 10단계에 있어요.</p>
   </div>
 </div>
 
