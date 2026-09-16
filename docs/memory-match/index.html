@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fly Memory Match</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans+KR:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* One deliberate look: a card table. Painted explicitly, identical on light and dark hosts. */
+:root{
+  --felt:#1E4A40; --felt-deep:#153830; --rail:#0F2A24; --edge:#2F6558; --chalk:#E7F0EA; --chalk-dim:#A9C2B8;
+  --card:#F6F7F2; --card-ink:#1B2623; --card-line:#D5DAD2; --back:#7A2E3B; --back-line:#A34B59;
+  --same:#F0A445; --diff:#86B9EC; --ok:#6FD497; --bad:#F2837A; --you:#E9D46A;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--rail);color:var(--chalk);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:18px;padding-block:26px 44px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-direction:column;gap:8px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.lang a{color:var(--chalk-dim);font-family:var(--mono);font-size:13px}
+.lang a:hover,.lang a:focus-visible{color:var(--chalk)}
+.stamp{align-self:flex-start;font-family:var(--mono);font-size:12px;letter-spacing:.06em;border:1.5px solid var(--bad);color:var(--bad);padding:3px 8px;border-radius:3px;transform:rotate(-1.5deg)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,5.2vw,50px);line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.lede{margin:0;max-width:66ch;color:var(--chalk-dim)}
+.bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+button,select{font:inherit;font-size:14px;color:var(--chalk);background:var(--felt-deep);border:1px solid var(--edge);border-radius:7px;padding:6px 12px;cursor:pointer}
+button:hover,select:hover{border-color:var(--chalk-dim)}
+button:focus-visible,select:focus-visible,input:focus-visible+.switch{outline:2px solid var(--you);outline-offset:2px}
+button:disabled{opacity:.4;cursor:default}
+.lbl{font-family:var(--mono);font-size:13px;color:var(--chalk-dim)}
+.toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:14px}
+.toggle input{position:absolute;opacity:0;width:1px;height:1px}
+.switch{width:38px;height:22px;border-radius:99px;background:var(--felt-deep);border:1px solid var(--edge);position:relative;transition:background .2s}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--chalk-dim);transition:transform .2s,background .2s}
+.toggle input:checked+.switch{background:#5D5424}
+.toggle input:checked+.switch::after{transform:translateX(16px);background:var(--you)}
+
+.table{background:radial-gradient(120% 90% at 50% 20%,var(--felt) 0%,var(--felt-deep) 100%);border:10px solid var(--rail);box-shadow:inset 0 0 0 1px var(--edge);border-radius:26px;padding:20px 18px 18px;display:flex;flex-direction:column;gap:16px}
+.progress{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:13px;color:var(--chalk-dim);font-variant-numeric:tabular-nums}
+.stage{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1fr) minmax(0,.9fr);gap:16px;align-items:center}
+.slot{display:flex;flex-direction:column;align-items:center;gap:6px}
+.slotlabel{font-family:var(--mono);font-size:12px;color:var(--chalk-dim);letter-spacing:.05em}
+.cardbox{width:100%;max-width:220px;aspect-ratio:5/7;perspective:900px}
+.pile{position:relative;width:100%;max-width:150px;aspect-ratio:5/7}
+.pile:empty{border:1.5px dashed var(--edge);border-radius:12px}
+.pile .card{position:absolute;inset:0;transform:translate(var(--ox,0px),var(--oy,0px)) rotate(var(--rz,0deg))}
+.pile .card.down{transform:translate(var(--ox,0px),var(--oy,0px)) rotate(var(--rz,0deg)) rotateY(180deg)}
+.card.flying{position:fixed;z-index:50;margin:0;pointer-events:none;transition:none}
+.card{position:relative;width:100%;height:100%;transition:transform .5s cubic-bezier(.3,.7,.3,1),opacity .3s;transform-style:preserve-3d}
+.card.down{transform:rotateY(180deg)}
+.card.gone{opacity:0;transform:translateX(30px)}
+.card.empty{opacity:0}
+.face,.backface{position:absolute;inset:0;border-radius:12px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.face{background:var(--card);color:var(--card-ink);border:1px solid var(--card-line);padding:11px;display:flex;flex-direction:column;gap:6px;box-shadow:0 8px 18px rgba(0,0,0,.28)}
+.backface{transform:rotateY(180deg);background:var(--back);border:1px solid var(--back-line);box-shadow:0 8px 18px rgba(0,0,0,.28);
+  background-image:repeating-linear-gradient(45deg,transparent 0 7px,rgba(255,255,255,.08) 7px 8px),repeating-linear-gradient(-45deg,transparent 0 7px,rgba(255,255,255,.08) 7px 8px)}
+.corner{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:#5D6B66}
+.oname{font-family:var(--display);font-weight:600;font-size:clamp(14px,2.2vw,20px);line-height:1.15;text-wrap:balance;overflow-wrap:anywhere}
+.pile .oname{font-size:clamp(12px,1.6vw,15px)}
+.fp{margin-top:auto;display:flex;flex-direction:column;gap:3px}
+.fp svg{width:100%;height:auto;display:block}
+.fplabel{font-family:var(--mono);font-size:9.5px;color:#6B7873}
+
+.ask{display:flex;flex-direction:column;gap:12px;align-items:stretch;text-align:center}
+.question{font-family:var(--display);font-weight:600;font-size:clamp(18px,2.6vw,24px);line-height:1.2;text-wrap:balance}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.answers button{font-family:var(--body);font-weight:600;font-size:16px;padding:12px 8px;border-radius:10px;color:#1B2623;border:none}
+.answers .no{background:var(--diff)} .answers .yes{background:var(--same)}
+.answers .key{display:block;font-family:var(--mono);font-size:11px;font-weight:400;opacity:.75}
+.timer{height:5px;border-radius:99px;background:rgba(0,0,0,.25);overflow:hidden}
+.timer i{display:block;height:100%;width:100%;background:var(--you);transform-origin:left;transform:scaleX(0)}
+.truth{min-height:26px;font-family:var(--display);font-weight:600;font-size:18px}
+
+.seats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.seat{background:rgba(0,0,0,.18);border:1px solid var(--edge);border-radius:14px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.seat.you{border-color:#8C7F3A}
+.seat h2{font-family:var(--display);font-weight:600;font-size:16px;margin:0;line-height:1.2}
+.avatar{height:48px;display:flex;align-items:center;justify-content:center}
+.youbadge{font-family:var(--display);font-weight:800;font-size:22px;color:var(--you)}
+.paddle{font-weight:600;font-size:15px;padding:3px 12px;border-radius:8px;color:#1B2623;min-height:28px;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .3s}
+.paddle.up{opacity:1;transform:translateY(0) rotate(var(--tilt,0deg))}
+.mark{font-family:var(--mono);font-size:13px;min-height:20px}
+.meta{display:grid;grid-template-columns:auto auto;justify-content:center;column-gap:10px;row-gap:1px;font-family:var(--mono);font-size:12px;color:var(--chalk-dim);font-variant-numeric:tabular-nums}
+.meta dt{text-align:left}.meta dd{margin:0;text-align:right;color:var(--chalk)}
+
+.notes{font-size:13px;color:var(--chalk-dim);max-width:74ch;display:flex;flex-direction:column;gap:8px}
+.notes p{margin:0}
+.notes strong{color:var(--chalk)}
+.verdicts{display:flex;flex-wrap:wrap;gap:6px}
+.v{font-family:var(--mono);font-size:12px;border:1px solid var(--edge);border-radius:5px;padding:2px 7px}
+.v.t{color:var(--ok);border-color:var(--ok)} .v.x{color:var(--chalk-dim)}
+
+@media (max-width:700px){
+  .stage{grid-template-columns:minmax(0,.8fr) minmax(0,1fr)}
+  .ask{grid-column:1 / -1}
+  .seats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion:reduce){ .card,.paddle,.switch,.switch::after{transition:none} }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="topline"><span class="stamp">Staged · not a prediction of fly behaviour</span><nav class="lang"><a href="ko.html" hreflang="ko" lang="ko">한국어</a></nav></div>
+    <h1>Fly Memory Match</h1>
+    <p class="lede">Cards arrive one at a time, and for each one the question is: is this the same odor as the card just before it? The three flies' answers are the real answers the step 10 model gave. The <b>real brain</b> is a model built from one male fruit fly's wiring diagram (the MaleCNS connectome); the <b>shuffled brain</b> keeps every neuron and every connection count but rewires who connects to whom; <b>memory, no brain</b> sends the olfactory receptor neurons' signals straight into the memory unit, bypassing the brain. Switch on <i>Play along</i> to compete with the flies.</p>
+  </header>
+
+  <div class="bar">
+    <button id="play" type="button">Pause</button>
+    <button id="restart" type="button">Restart</button>
+    <label for="speed" class="lbl">Speed</label>
+    <select id="speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+    <label class="toggle" for="join"><input type="checkbox" id="join"><span class="switch" aria-hidden="true"></span>Play along</label>
+  </div>
+
+  <section class="table" aria-label="Card table">
+    <div class="progress"><span id="count"></span><span id="trialref"></span></div>
+    <div class="stage">
+      <div class="slot"><div class="pile" id="pile"></div><div class="slotlabel">Previous card</div></div>
+      <div class="slot"><div class="cardbox"><div class="card empty" id="cur"></div></div><div class="slotlabel">This card</div></div>
+      <div class="ask">
+        <div class="question" id="question">Remember the first card</div>
+        <div class="answers" id="answers" hidden>
+          <button type="button" class="no" id="ansNo">Different<span class="key">← key</span></button>
+          <button type="button" class="yes" id="ansYes">Same<span class="key">→ key</span></button>
+        </div>
+        <div class="timer" id="timer" hidden><i id="timerbar"></i></div>
+        <div class="truth" id="truth" aria-live="polite"></div>
+      </div>
+    </div>
+    <div class="seats" id="seats"></div>
+  </section>
+
+  <div class="notes">
+    <div class="verdicts" id="verdicts"></div>
+    <p><strong>The benchmark.</strong> 1,000 items that show the flies 33 odors they never smelled in training, through olfactory receptor neurons never used in training (test B of step 10 in the repository). Each fly's "Benchmark" score is over all 1,000 items; "This deck" is over the 160 items in the deck being played.</p>
+    <p><strong>How to read it.</strong> The real-brain fly tells same from different even when a new odor arrives on neurons it never used. The shuffled-brain fly and the memory-without-a-brain fly are at chance even on the cards they trained on — they memorised instead of learning — so this game could not decide whether the wiring is what makes the difference (VOID). Comparing the two cards' brain responses by cosine similarity alone, with no memory, the real brain separates same from different odors at AUC 0.947 and the shuffled brain at 0.514; that was explored after the results, so it is a hypothesis for a next experiment, not evidence.</p>
+    <p><strong>What is real and what is staged.</strong> Every comparison is one real benchmark item: the model received the previous card's odor on one set of receptor neurons and, after one blank frame, this card's odor on neurons unused in training, and answered (mean probability over three initialisation seeds, split at 0.5). The continuous stream is stitched together from items whose second odor matches the next item's first odor, so the model drew fresh neurons and started a fresh memory for every comparison. The shuffled-brain fly is the first shuffle by number (seed 1000), not picked by score. The bars on each card are the responses of 23 receptors (up excitation, down inhibition); a fly's input spreads that pattern over randomly chosen neurons, so it is not identical to the bars. The flies, the table and the cards are illustration.</p>
+    <p>Sources and licenses. Receptor responses: Hallem &amp; Carlson (2006) <em>Cell</em> 125:143, via DoOR.data v2.0.1 (Münch &amp; Galizia 2016, <em>Sci Rep</em> 6:21841), CC BY-SA 4.0; the response patterns on these cards are shared under the same license. Connectome: MaleCNS v1.0 (Berg et al. 2026, <em>Cell</em>), CC-BY 4.0. Code and rules: step 10 of the malecns-operator repository.</p>
+  </div>
+</div>
+
+<script id="flydata" type="application/json">{"odors":[{"name":"1-pentanol","cls":"alcohol","fp":[25,113,183,82,43,205,98,111,63,16,52,57,19,159,132,183,71,61,182,63,34,87,163]},{"name":"acetone","cls":"ketone","fp":[14,4,42,2,9,25,5,13,4,41,5,132,11,38,1,7,12,9,41,25,17,11,32]},{"name":"diethyl succinate","cls":"ester","fp":[1,53,209,35,24,-3,13,6,37,31,5,-7,23,186,13,6,48,2,48,19,31,16,24]},{"name":"butyric acid","cls":"acid","fp":[47,39,121,6,19,29,14,22,18,20,16,36,27,143,22,59,23,4,52,28,24,23,141]},{"name":"ethyl propionate","cls":"ester","fp":[52,16,192,4,29,18,22,170,56,24,3,101,22,22,53,102,34,58,70,33,21,53,61]},{"name":"hexanoic acid","cls":"acid","fp":[33,59,121,12,16,24,26,9,10,23,15,31,25,31,18,20,35,3,53,28,21,25,25]},{"name":"delta-decalactone","cls":"O ring","fp":[3,6,15,7,8,7,5,4,1,43,4,4,13,13,6,2,11,15,37,6,25,20,1]},{"name":"nerol","cls":"terpene","fp":[2,51,41,6,16,27,14,11,1,40,15,-6,23,25,19,27,17,12,55,12,33,77,5]},{"name":"alpha-pinene","cls":"terpene","fp":[12,50,37,6,6,45,27,6,19,39,4,2,19,18,20,37,13,13,61,25,28,42,2]},{"name":"p-cymene","cls":"terpene","fp":[6,49,22,3,6,26,13,4,13,45,11,1,10,9,14,16,4,13,30,11,31,3,1]},{"name":"benzaldehyde","cls":"arom","fp":[137,14,36,4,13,100,57,14,23,29,109,8,8,211,12,217,6,21,50,56,23,42,60]},{"name":"furfural","cls":"O ring","fp":[48,7,33,27,19,193,4,36,7,28,4,52,17,193,42,193,55,12,74,66,14,45,96]},{"name":"2-pentanol","cls":"alcohol","fp":[31,103,117,50,46,179,117,170,78,14,40,41,26,44,104,95,76,59,157,65,31,93,230]},{"name":"acetophenone","cls":"arom","fp":[268,34,36,3,5,27,58,12,39,41,87,7,30,195,41,27,0,-11,35,91,14,41,65]},{"name":"methyl acetate","cls":"ester","fp":[23,16,58,11,13,11,9,24,26,26,3,271,15,18,13,11,31,4,42,19,40,16,27]},{"name":"terpinolene","cls":"terpene","fp":[7,80,23,6,2,24,15,14,9,41,10,14,14,45,21,23,11,8,49,12,32,93,2]},{"name":"propanal","cls":"aldehyde","fp":[13,-23,40,4,26,11,-10,17,13,7,0,14,11,16,21,1,1,29,65,15,17,23,9]},{"name":"methyl hexanoate","cls":"ester","fp":[31,65,260,18,47,7,24,60,211,14,20,4,37,98,27,57,34,-2,241,40,-1,200,56]},{"name":"2-ethylhexanoic acid","cls":"acid","fp":[19,7,23,7,11,9,-4,47,22,31,7,23,21,7,14,18,10,13,112,23,14,16,7]},{"name":"ethyl butyrate","cls":"ester","fp":[43,102,197,24,20,138,43,201,75,31,5,41,10,178,118,18,43,139,115,33,17,93,124]},{"name":"ethyl 3-hydroxybutyrate","cls":"ester","fp":[82,59,142,43,61,104,56,148,77,12,50,37,57,107,95,-10,21,224,248,79,4,200,207]},{"name":"dimethyl sulfide","cls":"sulfid","fp":[-2,2,17,5,8,15,2,13,-1,39,-2,66,12,12,8,9,18,6,45,28,20,1,22]},{"name":"acetic acid","cls":"acid","fp":[32,32,36,8,13,16,21,12,3,26,13,26,22,6,12,6,26,15,40,18,21,31,12]},{"name":"eugenol","cls":"arom","fp":[78,13,11,10,12,10,7,12,1,43,2,23,11,18,3,7,15,10,47,19,23,62,13]},{"name":"cadaverine","cls":"amine","fp":[-3,24,17,2,9,29,11,14,-7,31,6,9,17,3,20,-24,14,3,42,23,26,33,24]},{"name":"1-octen-3-ol","cls":"alcohol","fp":[8,178,125,28,35,158,121,46,91,17,23,17,34,175,30,26,50,54,193,38,10,209,57]},{"name":"ethyl methanoate","cls":"ester","fp":[17,12,17,4,11,6,7,11,-2,36,11,29,21,9,7,125,14,15,35,15,21,28,27]},{"name":"alpha-terpineol","cls":"terpene","fp":[4,114,67,5,10,35,22,8,13,39,5,-6,22,30,24,22,19,2,64,5,33,23,10]},{"name":"benzyl alcohol","cls":"arom","fp":[9,20,44,4,4,61,73,2,9,26,119,16,15,127,32,22,39,10,32,32,27,13,33]},{"name":"E2-hexenol","cls":"alcohol","fp":[6,108,91,50,43,240,53,91,32,14,49,22,22,120,148,197,32,82,267,70,18,226,113]},{"name":"1-hexanol","cls":"alcohol","fp":[24,175,67,60,48,254,154,75,59,12,39,37,25,184,115,113,74,151,196,71,42,170,105]},{"name":"butanal","cls":"aldehyde","fp":[12,-9,57,3,51,82,10,53,21,21,1,11,14,73,27,71,23,19,66,25,23,38,9]},{"name":"2-butanone","cls":"ketone","fp":[21,13,88,12,16,30,13,27,17,32,11,146,16,78,27,26,33,15,52,48,12,16,97]}],"cards":[9,7,7,4,4,19,19,2,2,6,6,21,21,32,32,16,16,0,0,26,26,31,31,22,22,5,5,22,22,5,5,31,31,20,20,13,13,31,31,13,13,14,14,9,9,18,18,28,28,10,10,27,27,9,9,1,1,10,10,29,29,2,2,5,5,30,30,23,23,11,11,5,5,32,32,24,24,4,4,5,5,17,17,22,22,4,4,23,23,30,30,13,13,26,26,30,30,20,20,18,18,27,27,14,14,8,8,4,4,32,32,26,26,29,29,6,6,21,21,9,9,12,12,8,8,32,32,8,8,13,13,26,26,20,20,25,25,11,11,25,25,5,5,6,6,31,31,6,6,3,3,19,19,18,18,15,15,25,25,9,9],"steps":[{"trial":536,"same":false,"p":[0.988,0.994,0.715]},{"trial":845,"same":true,"p":[0.985,0.022,0.631]},{"trial":162,"same":false,"p":[0.0,0.668,0.0]},{"trial":489,"same":true,"p":[0.342,0.0,0.0]},{"trial":534,"same":false,"p":[0.342,0.728,0.999]},{"trial":557,"same":true,"p":[0.999,0.392,0.735]},{"trial":740,"same":false,"p":[0.997,0.476,0.382]},{"trial":599,"same":true,"p":[1.0,0.309,1.0]},{"trial":778,"same":false,"p":[0.0,0.302,0.666]},{"trial":783,"same":true,"p":[1.0,0.884,0.006]},{"trial":448,"same":false,"p":[0.999,0.66,0.668]},{"trial":333,"same":true,"p":[0.999,0.001,0.032]},{"trial":520,"same":false,"p":[0.002,0.35,0.667]},{"trial":463,"same":true,"p":[0.651,1.0,0.357]},{"trial":166,"same":false,"p":[0.04,0.667,0.971]},{"trial":791,"same":true,"p":[0.991,0.999,0.333]},{"trial":184,"same":false,"p":[0.002,0.338,0.766]},{"trial":535,"same":true,"p":[0.702,0.386,0.344]},{"trial":874,"same":false,"p":[0.0,0.0,0.567]},{"trial":289,"same":true,"p":[0.589,0.874,1.0]},{"trial":456,"same":false,"p":[0.0,0.283,1.0]},{"trial":339,"same":true,"p":[0.438,0.667,0.333]},{"trial":842,"same":false,"p":[0.013,0.973,0.354]},{"trial":135,"same":true,"p":[0.999,0.333,0.001]},{"trial":272,"same":false,"p":[0.001,0.334,0.334]},{"trial":351,"same":true,"p":[0.308,0.333,0.311]},{"trial":792,"same":false,"p":[0.702,0.0,0.667]},{"trial":325,"same":true,"p":[1.0,0.667,0.333]},{"trial":366,"same":false,"p":[0.663,0.002,0.666]},{"trial":309,"same":true,"p":[0.341,0.918,1.0]},{"trial":582,"same":false,"p":[0.97,0.667,0.012]},{"trial":723,"same":true,"p":[0.898,0.0,0.0]},{"trial":652,"same":false,"p":[0.313,0.0,0.613]},{"trial":937,"same":true,"p":[0.34,0.0,0.333]},{"trial":540,"same":false,"p":[0.0,0.053,0.333]},{"trial":773,"same":true,"p":[0.086,0.001,0.666]},{"trial":320,"same":false,"p":[0.0,0.333,0.667]},{"trial":199,"same":true,"p":[0.995,0.71,0.667]},{"trial":684,"same":false,"p":[0.38,0.0,0.027]},{"trial":41,"same":true,"p":[0.097,0.045,1.0]},{"trial":38,"same":false,"p":[0.122,0.643,0.333]},{"trial":949,"same":true,"p":[0.696,0.346,0.667]},{"trial":728,"same":false,"p":[0.342,0.947,0.333]},{"trial":855,"same":true,"p":[0.162,0.956,0.998]},{"trial":714,"same":false,"p":[0.518,0.65,0.667]},{"trial":59,"same":true,"p":[0.999,0.333,0.702]},{"trial":798,"same":false,"p":[0.001,0.333,0.043]},{"trial":893,"same":true,"p":[0.972,0.342,0.333]},{"trial":832,"same":false,"p":[0.096,0.39,0.333]},{"trial":465,"same":true,"p":[0.33,0.667,0.334]},{"trial":518,"same":false,"p":[0.0,0.674,0.138]},{"trial":761,"same":true,"p":[0.519,0.0,0.333]},{"trial":84,"same":false,"p":[0.003,0.072,0.333]},{"trial":395,"same":true,"p":[0.001,0.0,0.662]},{"trial":698,"same":false,"p":[0.0,0.333,0.405]},{"trial":133,"same":true,"p":[0.637,0.891,0.553]},{"trial":130,"same":false,"p":[0.003,1.0,0.247]},{"trial":245,"same":true,"p":[0.764,0.0,1.0]},{"trial":848,"same":false,"p":[0.387,0.111,0.43]},{"trial":57,"same":true,"p":[0.957,0.335,0.0]},{"trial":178,"same":false,"p":[0.487,0.363,1.0]},{"trial":685,"same":true,"p":[0.927,0.024,0.667]},{"trial":844,"same":false,"p":[0.364,0.217,0.333]},{"trial":645,"same":true,"p":[0.665,0.329,0.667]},{"trial":284,"same":false,"p":[0.653,0.038,0.664]},{"trial":295,"same":true,"p":[0.667,0.69,0.333]},{"trial":966,"same":false,"p":[0.0,0.333,0.333]},{"trial":441,"same":true,"p":[0.989,0.895,0.665]},{"trial":850,"same":false,"p":[0.0,0.002,0.334]},{"trial":17,"same":true,"p":[0.981,0.663,0.332]},{"trial":618,"same":false,"p":[0.214,0.106,0.668]},{"trial":749,"same":true,"p":[0.664,0.336,0.334]},{"trial":504,"same":false,"p":[0.022,0.334,0.46]},{"trial":469,"same":true,"p":[0.659,1.0,0.927]},{"trial":756,"same":false,"p":[0.104,0.0,0.999]},{"trial":113,"same":true,"p":[1.0,0.333,0.153]},{"trial":800,"same":false,"p":[0.093,0.0,0.003]},{"trial":919,"same":true,"p":[0.998,0.0,0.333]},{"trial":416,"same":false,"p":[0.641,0.001,0.0]},{"trial":99,"same":true,"p":[0.363,0.999,1.0]},{"trial":758,"same":false,"p":[0.0,0.004,0.662]},{"trial":231,"same":true,"p":[0.04,1.0,0.002]},{"trial":296,"same":false,"p":[0.0,0.333,0.0]},{"trial":553,"same":true,"p":[0.99,0.676,0.339]},{"trial":42,"same":false,"p":[0.145,0.0,0.333]},{"trial":631,"same":true,"p":[1.0,0.0,0.391]},{"trial":408,"same":false,"p":[0.0,0.0,0.002]},{"trial":707,"same":true,"p":[0.999,0.002,0.67]},{"trial":46,"same":false,"p":[0.0,0.982,0.333]},{"trial":223,"same":true,"p":[0.987,0.334,0.045]},{"trial":378,"same":false,"p":[0.0,0.59,0.333]},{"trial":561,"same":true,"p":[0.194,0.333,0.333]},{"trial":32,"same":false,"p":[0.0,0.334,0.333]},{"trial":945,"same":true,"p":[0.993,0.0,0.003]},{"trial":106,"same":false,"p":[0.001,0.082,0.667]},{"trial":621,"same":true,"p":[0.995,0.071,0.0]},{"trial":742,"same":false,"p":[0.655,0.339,0.621]},{"trial":957,"same":true,"p":[0.001,0.355,0.26]},{"trial":122,"same":false,"p":[0.0,0.334,0.333]},{"trial":983,"same":true,"p":[0.999,0.003,0.333]},{"trial":358,"same":false,"p":[0.655,0.0,0.613]},{"trial":653,"same":true,"p":[0.675,0.737,1.0]},{"trial":704,"same":false,"p":[0.001,0.076,0.436]},{"trial":825,"same":true,"p":[0.717,0.096,0.655]},{"trial":422,"same":false,"p":[0.351,0.336,0.622]},{"trial":873,"same":true,"p":[1.0,0.687,0.666]},{"trial":576,"same":false,"p":[0.006,0.42,0.071]},{"trial":969,"same":true,"p":[0.553,0.333,0.668]},{"trial":524,"same":false,"p":[0.001,0.662,0.426]},{"trial":221,"same":true,"p":[0.661,0.004,0.656]},{"trial":602,"same":false,"p":[0.0,0.071,0.333]},{"trial":609,"same":true,"p":[0.652,0.667,0.861]},{"trial":186,"same":false,"p":[0.15,0.175,0.007]},{"trial":879,"same":true,"p":[0.989,0.962,0.335]},{"trial":608,"same":false,"p":[0.0,0.333,0.627]},{"trial":517,"same":true,"p":[1.0,0.0,0.548]},{"trial":222,"same":false,"p":[0.666,0.647,1.0]},{"trial":343,"same":true,"p":[0.656,0.332,0.402]},{"trial":478,"same":false,"p":[0.875,1.0,0.742]},{"trial":91,"same":true,"p":[1.0,0.894,0.537]},{"trial":454,"same":false,"p":[0.0,1.0,0.24]},{"trial":67,"same":true,"p":[0.437,0.779,0.821]},{"trial":360,"same":false,"p":[0.0,0.665,0.333]},{"trial":171,"same":true,"p":[0.999,1.0,0.667]},{"trial":220,"same":false,"p":[0.008,0.633,0.332]},{"trial":387,"same":true,"p":[0.335,0.374,0.002]},{"trial":772,"same":false,"p":[0.0,0.666,0.334]},{"trial":885,"same":true,"p":[0.987,0.0,0.643]},{"trial":110,"same":false,"p":[0.0,0.0,0.001]},{"trial":531,"same":true,"p":[0.215,0.333,0.651]},{"trial":334,"same":false,"p":[0.0,0.001,0.0]},{"trial":705,"same":true,"p":[0.651,0.999,0.691]},{"trial":508,"same":false,"p":[0.0,0.698,0.016]},{"trial":117,"same":true,"p":[0.444,0.931,0.667]},{"trial":730,"same":false,"p":[0.329,0.528,0.115]},{"trial":899,"same":true,"p":[0.331,0.667,0.0]},{"trial":142,"same":false,"p":[0.321,0.354,0.333]},{"trial":13,"same":true,"p":[0.994,0.185,0.999]},{"trial":28,"same":false,"p":[0.434,0.392,0.466]},{"trial":955,"same":true,"p":[0.933,0.837,0.227]},{"trial":446,"same":false,"p":[0.001,0.342,0.667]},{"trial":21,"same":true,"p":[0.997,0.0,0.165]},{"trial":750,"same":false,"p":[0.625,0.048,0.812]},{"trial":25,"same":true,"p":[1.0,0.0,0.288]},{"trial":238,"same":false,"p":[0.0,1.0,0.006]},{"trial":457,"same":true,"p":[0.636,0.624,0.695]},{"trial":150,"same":false,"p":[0.287,0.999,0.337]},{"trial":813,"same":true,"p":[0.634,1.0,0.342]},{"trial":64,"same":false,"p":[0.0,0.028,0.635]},{"trial":329,"same":true,"p":[0.667,0.0,0.33]},{"trial":450,"same":false,"p":[0.605,0.0,0.667]},{"trial":943,"same":true,"p":[0.431,0.001,0.838]},{"trial":100,"same":false,"p":[0.0,0.664,0.006]},{"trial":913,"same":true,"p":[0.998,0.336,0.666]},{"trial":346,"same":false,"p":[0.002,0.123,0.677]},{"trial":729,"same":true,"p":[0.419,0.351,0.664]},{"trial":12,"same":false,"p":[0.219,0.004,0.001]},{"trial":15,"same":true,"p":[0.999,0.336,0.301]},{"trial":688,"same":false,"p":[0.0,0.629,0.417]},{"trial":639,"same":true,"p":[1.0,0.005,0.0]}],"arms":[{"key":"REAL","acc":0.7326666666666667},{"key":"SHUF 1000","acc":0.5053333333333334},{"key":"MEM-ONLY","acc":0.508}],"verdicts":{"V0 encoder as measured":true,"V1 learnable":true,"V2 generalises":true,"V3 wiring earns it":"VOID","V4 beats memory alone":"VOID","V5 holds over delay":true,"V6 new odors alone":true,"WIRING HELPS MEMORY":"VOID"}}</script>
+<script id="i18n" type="application/json">{"classes":{"ester":"ester","alcohol":"alcohol","acid":"acid","aldehyde":"aldehyde","ketone":"ketone","terpene":"terpene","arom":"aromatic","amine":"amine","sulfid":"sulfide","O ring":"O-ring","other":"other"},"you":"You","deck":"This deck","streak":"Streak","best":"best","bench":"Benchmark","pass":"pass","fail":"fail","void":"VOID","vn":{"V2":"New odors on new neurons","V3":"Better than the shuffled brain","V4":"Better than memory, no brain","V5":"Holds over 8 blank frames","V6":"New odors on seen neurons","WIRING":"The wiring helps memory"},"fp_aria":"response pattern of 23 receptors","fp_label":"23 receptors · spikes/s","nth":"#{n}","timeout":"✗ time out","right":"✓ right","wrong":"✗ wrong","same":"Same","diff":"Different","q_first":"Remember the first card","q_ask":"Same odor as the previous card?","count":"Card {a} / {b}","item":"Benchmark item #{n}","truth_same":"Answer: same odor","truth_diff":"Answer: different odor","end":"End of the deck. Restart to play again","pause":"Pause","play":"Play","arms":{"REAL":"Real brain","SHUF 1000":"Shuffled brain","MEM-ONLY":"Memory, no brain"}}</script>
+<script>
+(() => {
+  const D = JSON.parse(document.getElementById("flydata").textContent);
+  const STILL = Math.max(0, parseInt(new URLSearchParams(location.search).get("still") || "0", 10) || 0);   // ?still=N: no motion, stop at comparison N revealed
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches || STILL > 0;
+  const T = JSON.parse(document.getElementById("i18n").textContent);
+  const CLASS_KO = T.classes;
+  const ANSWER_MS = 6000;
+  const $ = id => document.getElementById(id);
+
+  const fly = `<svg viewBox="0 0 60 60" width="46" height="46" aria-hidden="true"><g stroke="#0E1512" stroke-width="2" stroke-linecap="round" fill="none"><path d="M22 30 L12 22 M22 34 L10 34 M24 38 L13 47 M38 30 L48 22 M38 34 L50 34 M36 38 L47 47"/></g><ellipse cx="22" cy="27" rx="11" ry="6" fill="rgba(200,230,240,.55)" transform="rotate(-25 22 27)"/><ellipse cx="38" cy="27" rx="11" ry="6" fill="rgba(200,230,240,.55)" transform="rotate(25 38 27)"/><ellipse cx="30" cy="36" rx="7" ry="12" fill="#2A1F17"/><circle cx="30" cy="21" r="6" fill="#2A1F17"/><circle cx="26.5" cy="19.5" r="2.6" fill="#C0392B"/><circle cx="33.5" cy="19.5" r="2.6" fill="#C0392B"/></svg>`;
+
+  function makeSeat(name, you) {
+    const el = document.createElement("div"); el.className = "seat" + (you ? " you" : "");
+    el.innerHTML = `<h2>${name}</h2><div class="avatar">${you ? '<span class="youbadge">${T.you}</span>' : fly}</div><span class="paddle"></span><div class="mark"></div><dl class="meta"></dl>`;
+    return {el, name, you, paddle: el.querySelector(".paddle"), mark: el.querySelector(".mark"), meta: el.querySelector(".meta"), right: 0, n: 0, streak: 0, best: 0};
+  }
+  const flies = D.arms.map((a, j) => Object.assign(makeSeat(T.arms[a.key], false), {j, acc: a.acc}));
+  const me = makeSeat(T.you, true);
+  function layoutSeats() {
+    const box = $("seats"); box.innerHTML = "";
+    if ($("join").checked) box.appendChild(me.el);
+    flies.forEach(f => box.appendChild(f.el));
+  }
+  function meta(s) {
+    const rows = [[T.deck, s.n ? `${s.right}/${s.n} · ${(100 * s.right / s.n).toFixed(0)}%` : "–"], [T.streak, `${s.streak} · ${T.best} ${s.best}`]];
+    if (!s.you) rows.push([T.bench, `${(s.acc * 100).toFixed(1)}%`]);
+    s.meta.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+  }
+
+  for (const [k, v] of Object.entries(D.verdicts || {})) {
+    if (!/^V[2-6]|^WIRING/.test(k)) continue;
+    const s = document.createElement("span"); s.className = "v " + (v === true ? "t" : "x");
+    s.textContent = `${T.vn[k.split(" ")[0]] || k}: ${v === true ? T.pass : v === false ? T.fail : v === "VOID" ? T.void : v}`;
+    $("verdicts").appendChild(s);
+  }
+
+  function fingerprint(fp) {
+    const w = 161, h = 44, mid = 32, sc = 30 / 300;
+    return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${T.fp_aria}">${fp.map((v, i) => {
+      const len = Math.max(0.8, Math.abs(v) * sc);
+      return `<rect x="${i * 7 + 1}" y="${v >= 0 ? mid - len : mid}" width="5" height="${len}" fill="${v >= 0 ? "#2E6B5B" : "#B14A3E"}"/>`;
+    }).join("")}<line x1="0" x2="${w}" y1="${mid}" y2="${mid}" stroke="#9AA59F" stroke-width=".6"/></svg>`;
+  }
+  function fill(el, oi, k) {
+    const o = D.odors[oi];
+    el.innerHTML = `<div class="face"><div class="corner"><span>${CLASS_KO[o.cls] || o.cls}</span><span>${T.nth.replace("{n}", k + 1)}</span></div><div class="oname">${o.name}</div><div class="fp">${fingerprint(o.fp)}<span class="fplabel">${T.fp_label}</span></div></div><div class="backface"></div>`;
+  }
+
+  let token = 0, playing = true, speed = 1, timers = [], answerResolve = null;
+  const wait = ms => new Promise(r => timers.push(setTimeout(r, reduce ? Math.min(ms, 400) : ms / speed)));
+  async function paused(my) { while (!playing && my === token) await new Promise(r => setTimeout(r, 120)); }
+
+  function askHuman(my) {
+    return new Promise(resolve => {
+      $("answers").hidden = false; $("timer").hidden = false;
+      const bar = $("timerbar"); bar.style.transition = "none"; bar.style.transform = "scaleX(1)";
+      requestAnimationFrame(() => { bar.style.transition = `transform ${ANSWER_MS}ms linear`; bar.style.transform = "scaleX(0)"; });
+      const done = v => { if (answerResolve !== finish) return; finish(v); };
+      const finish = v => { answerResolve = null; clearTimeout(to); $("answers").hidden = true; $("timer").hidden = true; resolve(v); };
+      const to = setTimeout(() => done(null), ANSWER_MS);
+      answerResolve = finish;
+      $("ansNo").onclick = () => done(false); $("ansYes").onclick = () => done(true);
+    });
+  }
+  addEventListener("keydown", e => {
+    if (!answerResolve) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); answerResolve(false); }
+    if (e.key === "ArrowRight") { e.preventDefault(); answerResolve(true); }
+  });
+
+  function score(s, said, truth) {
+    const ok = said === truth; s.n++; if (ok) { s.right++; s.streak++; s.best = Math.max(s.best, s.streak); } else s.streak = 0;
+    s.mark.textContent = said === null ? T.timeout : ok ? T.right : T.wrong;
+    s.mark.style.color = ok ? "var(--ok)" : "var(--bad)";
+    meta(s);
+  }
+  function showPaddle(s, same, doubt) {
+    if (same === null) { s.paddle.textContent = "…"; s.paddle.style.background = "var(--chalk-dim)"; }
+    else { s.paddle.textContent = same ? T.same : T.diff; s.paddle.style.background = same ? "var(--same)" : "var(--diff)"; }
+    s.paddle.style.setProperty("--tilt", `${(same ? -1 : 1) * doubt * 22}deg`);
+    s.paddle.className = "paddle up";
+  }
+
+  async function flyToPile(cur, pile, odor, k, my) {
+    const n = Math.min(pile.children.length, 6);
+    const ox = n * 2.5, oy = -n * 2.5, rz = (Math.random() * 8 - 4).toFixed(1);
+    const cr = cur.getBoundingClientRect(), pr = pile.getBoundingClientRect();
+    const flying = document.createElement("div");
+    flying.className = "card flying"; flying.innerHTML = cur.innerHTML;
+    Object.assign(flying.style, {left: cr.left + "px", top: cr.top + "px", width: cr.width + "px", height: cr.height + "px"});
+    document.body.appendChild(flying); cur.className = "card empty";
+    const dx = pr.left + pr.width / 2 + ox - (cr.left + cr.width / 2), dy = pr.top + pr.height / 2 + oy - (cr.top + cr.height / 2);
+    const s = pr.width / cr.width;
+    if (!reduce && flying.animate) {
+      const anim = flying.animate([
+        {transform: "perspective(900px) translate(0px,0px) scale(1) rotate(0deg) rotateY(0deg)"},
+        {transform: `perspective(900px) translate(${dx * .55}px,${dy * .55 - 40}px) scale(${(1 + s) / 2}) rotate(${rz / 2}deg) rotateY(90deg)`, offset: .5},
+        {transform: `perspective(900px) translate(${dx}px,${dy}px) scale(${s}) rotate(${rz}deg) rotateY(180deg)`}
+      ], {duration: 700 / speed, easing: "cubic-bezier(.35,.6,.3,1)", fill: "forwards"});
+      try { await anim.finished; } catch (e) {}
+    }
+    flying.remove();
+    if (my !== token) return;
+    const landed = document.createElement("div");
+    landed.className = "card down";
+    landed.style.setProperty("--ox", ox + "px"); landed.style.setProperty("--oy", oy + "px"); landed.style.setProperty("--rz", rz + "deg");
+    fill(landed, odor, k); pile.appendChild(landed);
+    while (pile.children.length > 7) pile.firstElementChild.remove();
+    [...pile.children].forEach((c, i, all) => {
+      const m = all.length - 1 - i;                     // restack so the newest sits highest
+      const off = (Math.min(all.length - 1, 6) - m) * 2.5;
+      c.style.setProperty("--ox", off + "px"); c.style.setProperty("--oy", -off + "px");
+    });
+  }
+
+  async function run() {
+    const my = ++token; timers.forEach(clearTimeout); timers = [];
+    if (answerResolve) answerResolve(null);
+    [...flies, me].forEach(s => { s.right = s.n = s.streak = s.best = 0; s.mark.textContent = ""; s.paddle.className = "paddle"; meta(s); });
+    layoutSeats();
+    const pile = $("pile"), cur = $("cur");
+    document.querySelectorAll(".card.flying").forEach(el => el.remove());
+    pile.innerHTML = ""; cur.className = "card gone";
+    fill(cur, D.cards[0], 0);
+    await wait(200); if (my !== token) return;
+    cur.className = "card"; $("question").textContent = T.q_first; $("truth").textContent = "";
+    $("count").textContent = T.count.replace("{a}", 1).replace("{b}", D.cards.length); $("trialref").textContent = "";
+    await wait(1800); if (my !== token) return;
+
+    for (let k = 1; k < D.cards.length; k++) {
+      await paused(my); if (my !== token) return;
+      const step = D.steps[k - 1];
+      const top = pile.lastElementChild;
+      if (top && !top.classList.contains("down")) { top.classList.add("down"); await wait(250); if (my !== token) return; }
+      await flyToPile(cur, pile, D.cards[k - 1], k - 1, my); if (my !== token) return;
+      cur.className = "card gone";
+      [...flies, me].forEach(s => { s.paddle.className = "paddle"; s.mark.textContent = ""; });
+      $("truth").textContent = ""; $("question").textContent = T.q_ask;
+      await wait(260); if (my !== token) return;
+      fill(cur, D.cards[k], k); cur.className = "card";
+      $("count").textContent = T.count.replace("{a}", k + 1).replace("{b}", D.cards.length);
+      $("trialref").textContent = T.item.replace("{n}", step.trial);
+
+      let mine;
+      if ($("join").checked) { mine = await askHuman(my); if (my !== token) return; showPaddle(me, mine, 0); }
+      else { await wait(1100); if (my !== token) return; }
+
+      flies.forEach(f => { const p = step.p[f.j]; showPaddle(f, p > 0.5, 1 - Math.abs(2 * p - 1)); });
+      await wait(1100); if (my !== token) return;
+
+      pile.lastElementChild.classList.remove("down");
+      $("truth").textContent = step.same ? T.truth_same : T.truth_diff;
+      $("truth").style.color = step.same ? "var(--same)" : "var(--diff)";
+      flies.forEach(f => score(f, step.p[f.j] > 0.5, step.same));
+      if ($("join").checked) score(me, mine, step.same);
+      if (STILL && k === STILL) { playing = false; $("play").textContent = T.play; }
+      await wait(1700); if (my !== token) return;
+    }
+    $("question").textContent = T.end;
+    $("trialref").textContent = "";
+  }
+
+  $("play").onclick = () => { playing = !playing; $("play").textContent = playing ? T.pause : T.play; };
+  $("restart").onclick = run;
+  $("speed").onchange = e => { speed = +e.target.value; };
+  $("join").onchange = run;
+  run();
+})();
+</script>
+
+</html>

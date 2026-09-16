@@ -15,6 +15,16 @@ on olfactory receptor neurons it never saw.
 | Does the real wiring's lateral horn output carry "same odor" with no training at all? | a plain cosine similarity separates same from different at **AUC 0.947** on new odors and neurons; a shuffled seed at **0.514** | exploratory, after the verdicts |
 | What if the memory is handed the 23 receptor types directly? | 0.765 | reading, an oracle |
 
+[![Fly Memory Match: a card game replaying step 10's answers](docs/memory-match/preview.png)](https://hjkornn-phys.github.io/malecns-operator/memory-match/)
+
+**Play it:** [Fly Memory Match](https://hjkornn-phys.github.io/malecns-operator/memory-match/)
+([한국어](https://hjkornn-phys.github.io/malecns-operator/memory-match/ko.html)), or open
+`docs/memory-match/index.html` locally. Cards arrive one at a time and three flies — the real
+brain, a shuffled brain, and a memory with no brain — say whether each matches the one before;
+you can play along. Every answer is a real benchmark item from step 10; the stream, the table
+and the flies are illustration. Built by `scripts/viz/export_memory_match.py`; the odor
+response values on the cards are CC BY-SA 4.0 (`docs/memory-match/LICENSE.md`).
+
 In plain words: the wiring turns scattered receptor neurons into a pattern where
 the same odor looks the same, even through neurons never used in training, and
 the one shuffled wiring checked this way does not. The trained memory reads only
@@ -1028,6 +1038,7 @@ before the rules of any run like this one.
 | step 9 | `step9_delay.py` |
 | step 10 | `step10_odor_delay.py` |
 | lookups | `scripts/lookups/`: `lk9_lookup.py`, `lk10_mapping.py`, `lk10_lookup.py`, `lk11_lookup.py`, `lk11b_lookup.py` |
+| memory match page | `scripts/viz/export_memory_match.py` → `docs/memory-match/` |
 | viewer data | `viz_export.py` |
 
 ### Viewer data
