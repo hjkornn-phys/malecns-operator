@@ -881,6 +881,38 @@ cannot place them. The script measures and writes; it draws nothing.
 
 Code and documentation in this repository: MIT, see `LICENSE`.
 
-Data are not included; the scripts download them. MaleCNS v1.0 and the FlyWire
-annotations are CC-BY 4.0, and the Shiu et al. 2024 supplementary tables are
-used under their own terms. Cite those sources when you use the data.
+No data files are included; the scripts download them, and each source keeps its
+own license. Cite the sources below when you use the data.
+
+| data | used by | license |
+|---|---|---|
+| MaleCNS v1.0 connectome, annotations and neurotransmitter predictions | every step | CC-BY 4.0 |
+| FlyWire v783 connectivity and cell-type annotations, via Shiu et al.'s repository | `shiu_tasks.py`, `lb3_split.py` | **CC BY-NC 4.0, non-commercial** |
+| Shiu et al. 2024 model repository (FlyWire IDs of stimuli and readouts) | `shiu_tasks.py` | MIT |
+| DoOR.data v2.0.1, including Hallem & Carlson 2006's responses | step 10 and `scripts/lookups/` | **CC BY-SA 4.0, share-alike** |
+
+`shiu_tasks.py` names five FlyWire neuron IDs directly (MN9, aBN1, aDN1, aDN2), so
+the Shiu task set is for non-commercial use under FlyWire's terms. Anything built
+from DoOR's response values — including the odor response patterns shown on cards
+or figures made from step 10 — is shared under CC BY-SA 4.0.
+
+**Cite**
+
+- MaleCNS: Berg, Beckett, Costa, Schlegel, Januszewski, Marin, Nern, Preibisch,
+  Qiu, Takemura et al. (2026). Sexual dimorphism in the complete *Drosophila* male
+  central nervous system connectome. *Cell*. doi:10.1016/j.cell.2026.08.015
+- FlyWire connectivity: Dorkenwald et al. (2024). Neuronal wiring diagram of an
+  adult brain. *Nature* 634. doi:10.1038/s41586-024-07558-y
+- FlyWire annotations: Schlegel et al. (2024). Whole-brain annotation and
+  multi-connectome cell typing of *Drosophila*. *Nature* 634.
+  doi:10.1038/s41586-024-07686-5
+- Shiu et al. (2024). A *Drosophila* computational brain model reveals
+  sensorimotor processing. *Nature* 634. doi:10.1038/s41586-024-07763-9
+- DoOR 2.0: Münch & Galizia (2016). DoOR 2.0 — comprehensive mapping of
+  *Drosophila melanogaster* odorant responses. *Scientific Reports* 6, 21841.
+  doi:10.1038/srep21841
+- Hallem & Carlson (2006). Coding of odors by a receptor repertoire. *Cell* 125,
+  143–160. doi:10.1016/j.cell.2006.01.050
+- Glomerulus renaming and chemoreceptor co-expression, cited in step 10: Task et
+  al. (2022). Chemoreceptor co-expression in *Drosophila melanogaster* olfactory
+  neurons. *eLife* 11, e72599. doi:10.7554/eLife.72599
