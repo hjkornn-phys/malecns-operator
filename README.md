@@ -1,16 +1,43 @@
 # malecns-operator
 
-Network-model work on the MaleCNS v1.0 connectome: fetch, filter, compact,
-solve, compare against baseline, and train a steady-state rate model. Every
-number below was measured on one 8 GB Apple M1 laptop.
+**Can a fly's wiring play a memory game?** Show a smell, wait, show another, and
+ask: same or different? Here the fly is the MaleCNS v1.0 connectome of one male
+*Drosophila*, run as a steady-state rate model, with a small trained memory — a
+16-unit GRU — attached outside it. Nothing about that memory is biological. The
+smells are 110 real odorants, entered as the receptor responses Hallem & Carlson
+(2006) measured, and the test uses odors the memory never trained on, arriving
+on olfactory receptor neurons it never saw.
 
-Each question is decided by rules written into its script's docstring. The method
-those rules follow — what has to be measured before a threshold is chosen, what a
-result may claim, and the predictions registered before each run — lives in the
+| question | answer | status |
+|---|---|---|
+| Can memory plus the real wiring tell same from different, on new odors and new neurons? | **yes: 0.724** accuracy (lower bound 0.705); **0.713** after eight blank frames | verdict, rules committed before the run |
+| Is that the wiring, rather than any network or the raw input? | **not decided.** The shuffled-wiring and input-only arms did not learn even on their own training distribution, so both comparisons are VOID | verdict |
+| Does the real wiring's lateral horn output carry "same odor" with no training at all? | a plain cosine similarity separates same from different at **AUC 0.947** on new odors and neurons; a shuffled seed at **0.514** | exploratory, after the verdicts |
+| What if the memory is handed the 23 receptor types directly? | 0.765 | reading, an oracle |
+
+In plain words: the wiring turns scattered receptor neurons into a pattern where
+the same odor looks the same, even through neurons never used in training, and
+the one shuffled wiring checked this way does not. The trained memory reads only
+part of what is there. The comparison that would make this a finding about the
+wiring has not been made properly yet, and why is written down in
+[Step 9](#step-9-a-memory-outside-the-connectome-a-taste-pilot),
+[Step 10](#step-10-the-memory-game-on-real-odors) and `METHOD.md`.
+
+Every number here was measured on one 8 GB Apple M1 laptop. Each question is
+decided by rules written into its script's docstring and committed before the
+run. The method those rules follow — what has to be measured before a threshold
+is chosen, what a result may claim, and the predictions registered before each
+run — lives in the
 separate record kept beside this repository, in
-`METHOD.md` and `PREDICTIONS.md`.
+`METHOD.md` and `PREDICTIONS.md`. Predictions that turned out wrong are kept.
 
-**What holds so far**
+## How it got here
+
+The memory game is the tenth question asked of this network: fetch, filter,
+compact, solve, compare against a baseline, train a steady-state rate model, and
+score it against the real fly. The earlier questions, and what they left standing:
+
+**What holds**
 
 - The compacted network (`OR 1%`, half the baseline's edges) keeps the
   baseline's readout responses far better than random pruning of equal size —
@@ -37,6 +64,10 @@ separate record kept beside this repository, in
 
 **What does not, and what is still open**
 
+- A first version of the memory game, on taste, passed every verdict against
+  control arms that had learned nothing — caught after the run, recorded, and
+  turned into the gate that step 10 uses and into a new rule in `METHOD.md` —
+  [Step 9](#step-9-a-memory-outside-the-connectome-a-taste-pilot).
 - Similarity to the real fly is NOT established *for the untrained model*: on
   149 experimental outcomes it scores near chance —
   [Result 1](#result-1-similarity-to-the-real-fly-could-not-be-established).
@@ -839,6 +870,142 @@ what asks the intended question; that belongs to a new rule, not a re-tuning.
 What survives: at every tau spread tried, the degree-preserving null matched the
 baseline exactly. Nothing in this run separated the wiring from it.
 
+## Step 9: a memory outside the connectome, a taste pilot
+
+The steady-state model has no time axis, so one is attached from outside: a small
+trained memory, a 16-unit GRU, carried from frame to frame. The connectome is a
+fixed encoder for each frame, and every bit of time dependence belongs to the
+memory. A trial shows taste A, then D blank frames, then taste B, and asks whether
+they are the same taste. Rules were committed (`a3d5e76`) before the run and
+marked a pilot: taste pools are too small for a confirmatory test.
+
+```sh
+uv run --project .. --extra torch python ../scripts/step9_delay.py   # ~20 min, 1.6 GB
+```
+
+A lookup (LK-9 in `PREDICTIONS.md`, `scripts/lookups/lk9_lookup.py`) changed the
+design before the rules were written. Two samples of one taste drawn from one
+pool share 34-46% of their active neurons, and 9.6% of held-out water pairs are
+the identical subset, while different tastes share none: **neuron overlap alone
+would solve the task**. So A and B come from disjoint neurons in every set, and
+test B puts B on held-out neurons. The same lookup found the shuffled null weak —
+97.5% of DNs respond against 31.4% on the real wiring — and fixed test B at 1000
+trials, because a paired gap of 0.05 needs 290-934.
+
+| arm | test A, D 4 | test B, D 4 | test B, D 8 |
+|---|---|---|---|
+| real wiring + memory | 0.909 | **0.816** | 0.807 |
+| shuffled wiring + memory | 0.499 | 0.497 | 0.498 |
+| stimulus itself + memory | 0.480 | 0.505 | 0.502 |
+
+Every verdict passed, V0 to V5 and WIRING HELPS MEMORY. **Two of them passed for a
+reason their rules do not name.** The shuffled and stimulus-only arms are at
+chance on test A too — the set drawn from the neurons they trained on — while
+their training loss went to 7e-5. They memorised 800 trials instead of learning a
+comparison, so V3 (wiring beats shuffled) and V4 (wiring beats memory alone) were
+won against arms that had learned nothing. The verdicts stand as recorded; the
+fix went into step 10's rules and into `METHOD.md`.
+
+What the pilot does show: a 16-unit memory on the real wiring's DN readout holds a
+taste over eight blank frames and compares it with one arriving on neurons it
+never saw (0.807). The registered prediction that it would *not* hold past four
+frames was wrong.
+
+## Step 10: the memory game on real odors
+
+The same question, confirmatory, on olfaction. Rules were committed (`9aeb994`)
+before the run.
+
+```sh
+uv run --project .. --extra torch python ../scripts/step10_odor_delay.py   # ~45 min, 1.7 GB
+```
+
+**Input.** Hallem & Carlson 2006, as stored in DoOR.data v2.0.1: 23 odorant
+receptors by 110 odorants at one concentration, spikes per second, with no missing
+entry. The receptors map to 23 MaleCNS ORN types, 1,282 neurons. One sample turns
+each neuron of a type on with probability 0.5 at that receptor's response divided
+by 163, and adds background noise on the other 1,357 olfactory neurons. The
+readout is lateral horn output, 1,929 neurons.
+
+**Lookups that set the design** (`PREDICTIONS.md`, `scripts/lookups/`):
+
+- **LK-10, which data.** Of DoOR's 53 MaleCNS-mappable types, 47 have data, but
+  only 17% of the table is measured, and **its gaps are not random**: within
+  Hallem 2006, odorants other studies also chose respond more strongly (+0.26 z,
+  permutation p = 0.0002). Filling the gaps would bias the input, so only the
+  largest complete block is used — Hallem's own panel.
+- **LK-11, which readout.** The drafted rule scaled odor input until it moved as
+  many descending neurons as taste does, and **had no solution**: at 3.5 times
+  taste's peak input, odor moves 38 DNs against taste's 171. On the real wiring
+  only 9 DNs pass 1e-3, against 754 on a shuffled one. Lateral horn output
+  separates the two the right way (1,648 against about 890, with shuffled
+  responses 5.7 times smaller), so it became the readout and the input scale was
+  set on input size alone. The share-based V0 check was useless there, since
+  1,925 of 1,929 neurons pass 1e-4 on every wiring, and became a magnitude.
+
+**Two held-out axes.** Holding out odors alone would hand the stimulus-only arm
+the win, because the raw neuron vector *is* the receptor code. Holding out
+neurons alone would test little beyond glomerular convergence. So test B uses 33
+odors never trained on, delivered to receptor neurons never trained on; test C
+holds out odors only.
+
+**The step 9 fix.** Every arm must clear its own test A before any comparison
+involving it is read (gate G), a failed arm makes that comparison VOID rather than
+a pass, and all arms share a fixed 64-dimensional random projection and weight
+decay.
+
+| arm | test A, D 4 | test C, D 4 | test B, D 4 | test B, D 8 | gate G |
+|---|---|---|---|---|---|
+| real wiring + memory | 0.775 | 0.724 | **0.724** | 0.713 | pass |
+| shuffled wiring, 5 seeds | 0.486-0.523 | 0.479-0.505 | 0.496-0.510 | 0.496-0.511 | **all fail** |
+| stimulus itself + memory | 0.513 | 0.503 | 0.504 | 0.506 | **fail** |
+| 23 receptor types given (oracle) | 0.840 | 0.766 | 0.765 | 0.762 | pass |
+
+| verdict | result |
+|---|---|
+| V0 encoder as measured | True |
+| V1 learnable | True |
+| V2 generalises to new odors on new neurons | **True** — lower bound 0.705 |
+| V3 wiring beats shuffled | **VOID** |
+| V4 wiring beats memory alone | **VOID** |
+| V5 holds over eight blank frames | True — lower bound 0.693 |
+| V6 new odors on seen neurons | True — 0.724, the same as test B |
+| WIRING HELPS MEMORY | **VOID** |
+
+**The fix did not fix it.** A fixed projection and weight decay, set without
+checking that they prevent memorisation, left every null arm memorising exactly
+as in the pilot: training loss 2e-5 to 1.5e-4, test A at chance. The gate did its
+job — V3 and V4 are VOID instead of cheap passes — and the question they carried
+is unanswered. Two registered predictions, that the shuffled and stimulus-only
+arms would be valid, were wrong for that reason.
+
+What stands: a memory reading the real wiring's lateral horn output tells same
+from different odors it never trained on, through receptor neurons it never saw,
+and holds that over eight blank frames. New neurons cost it nothing beyond new
+odors (test C and test B are both 0.724).
+
+### No memory at all: a cosine similarity (exploratory)
+
+Run after the verdicts to separate the two ways a null arm can fail — no
+information in its features, or training that could not find it. Step 10's exact
+trials were rebuilt and encoded again, and the cosine similarity between frame A
+and frame B features scored same-odor against different-odor trials as an AUC.
+Nothing is trained.
+
+| wiring | train | test A | test B |
+|---|---|---|---|
+| real | 0.956 | 0.962 | **0.947** |
+| shuffled, seed 1000 | 0.504 | 0.489 | **0.514** |
+
+On the shuffled wiring any two samples sit nearly orthogonal (median cosine 0.02,
+same odor or not), so **its failure is mostly an absence of same-odor
+information**, not only memorisation. And on the real wiring **the trained memory
+is the bottleneck**: a fixed similarity separates new odors on new neurons far
+better (AUC 0.947) than the memory did (accuracy 0.724). One shuffled seed, after
+the fact, with no calibration slice — this is a hypothesis for a next run with its
+own rules, not evidence, and `METHOD.md` now asks for exactly that comparison
+before the rules of any run like this one.
+
 ## Layout
 
 - `data/` — downloaded tables, caches, logs and result JSON; not committed.
@@ -858,6 +1025,9 @@ baseline exactly. Nothing in this run separated the wiring from it.
 | step 6 | `step6_pheromone.py` |
 | step 7 | `step7_ir52b.py`, `step7b_sides.py` |
 | step 8 | `step8_dynamics.py` |
+| step 9 | `step9_delay.py` |
+| step 10 | `step10_odor_delay.py` |
+| lookups | `scripts/lookups/`: `lk9_lookup.py`, `lk10_mapping.py`, `lk10_lookup.py`, `lk11_lookup.py`, `lk11b_lookup.py` |
 | viewer data | `viz_export.py` |
 
 ### Viewer data
