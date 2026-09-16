@@ -65,6 +65,9 @@ button:disabled{opacity:.4;cursor:default}
 .fp{margin-top:auto;display:flex;flex-direction:column;gap:3px}
 .fp svg{width:100%;height:auto;display:block}
 .fplabel{font-family:var(--mono);font-size:9.5px;color:#6B7873}
+.pile .fplabel{display:none}
+.shot header,.shot .bar,.shot .notes{display:none}
+.shot .wrap{padding-block:14px}
 
 .ask{display:flex;flex-direction:column;gap:12px;align-items:stretch;text-align:center}
 .question{font-family:var(--display);font-weight:600;font-size:clamp(18px,2.6vw,24px);line-height:1.2;text-wrap:balance}
@@ -152,6 +155,7 @@ button:disabled{opacity:.4;cursor:default}
   const D = JSON.parse(document.getElementById("flydata").textContent);
   const STILL = Math.max(0, parseInt(new URLSearchParams(location.search).get("still") || "0", 10) || 0);   // ?still=N: no motion, stop at comparison N revealed
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches || STILL > 0;
+  if (new URLSearchParams(location.search).get("shot")) document.documentElement.classList.add("shot");   // ?shot=1: the card table only, for the README image
   const T = JSON.parse(document.getElementById("i18n").textContent);
   const CLASS_KO = T.classes;
   const ANSWER_MS = 6000;
@@ -228,7 +232,7 @@ button:disabled{opacity:.4;cursor:default}
   function showPaddle(s, same, doubt) {
     if (same === null) { s.paddle.textContent = "…"; s.paddle.style.background = "var(--chalk-dim)"; }
     else { s.paddle.textContent = same ? T.same : T.diff; s.paddle.style.background = same ? "var(--same)" : "var(--diff)"; }
-    s.paddle.style.setProperty("--tilt", `${(same ? -1 : 1) * doubt * 22}deg`);
+    s.paddle.style.setProperty("--tilt", `${(same ? -1 : 1) * doubt * 12}deg`);
     s.paddle.className = "paddle up";
   }
 
@@ -304,7 +308,7 @@ button:disabled{opacity:.4;cursor:default}
       $("truth").style.color = step.same ? "var(--same)" : "var(--diff)";
       flies.forEach(f => score(f, step.p[f.j] > 0.5, step.same));
       if ($("join").checked) score(me, mine, step.same);
-      if (STILL && k === STILL) { playing = false; $("play").textContent = T.play; }
+      if (STILL && k === STILL) { playing = false; $("question").textContent = ""; }
       await wait(1700); if (my !== token) return;
     }
     $("question").textContent = T.end;
