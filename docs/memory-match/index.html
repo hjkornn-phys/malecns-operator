@@ -81,7 +81,7 @@ button:disabled{opacity:.4;cursor:default}
 .seat.you{border-color:#8C7F3A}
 .seat h2{font-family:var(--display);font-weight:600;font-size:16px;margin:0;line-height:1.2}
 .avatar{height:48px;display:flex;align-items:center;justify-content:center}
-.youbadge{font-family:var(--display);font-weight:800;font-size:22px;color:var(--you)}
+
 .paddle{font-weight:600;font-size:15px;padding:3px 12px;border-radius:8px;color:#1B2623;min-height:28px;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .3s}
 .paddle.up{opacity:1;transform:translateY(0) rotate(var(--tilt,0deg))}
 .mark{font-family:var(--mono);font-size:13px;min-height:20px}
@@ -159,9 +159,10 @@ button:disabled{opacity:.4;cursor:default}
 
   const fly = `<svg viewBox="0 0 60 60" width="46" height="46" aria-hidden="true"><g stroke="#0E1512" stroke-width="2" stroke-linecap="round" fill="none"><path d="M22 30 L12 22 M22 34 L10 34 M24 38 L13 47 M38 30 L48 22 M38 34 L50 34 M36 38 L47 47"/></g><ellipse cx="22" cy="27" rx="11" ry="6" fill="rgba(200,230,240,.55)" transform="rotate(-25 22 27)"/><ellipse cx="38" cy="27" rx="11" ry="6" fill="rgba(200,230,240,.55)" transform="rotate(25 38 27)"/><ellipse cx="30" cy="36" rx="7" ry="12" fill="#2A1F17"/><circle cx="30" cy="21" r="6" fill="#2A1F17"/><circle cx="26.5" cy="19.5" r="2.6" fill="#C0392B"/><circle cx="33.5" cy="19.5" r="2.6" fill="#C0392B"/></svg>`;
 
+  const person = `<svg viewBox="0 0 60 60" width="46" height="46" aria-hidden="true"><circle cx="30" cy="21" r="9" fill="var(--you)"/><path d="M13 50 C13 37 21 32 30 32 C39 32 47 37 47 50 Z" fill="var(--you)"/></svg>`;
   function makeSeat(name, you) {
     const el = document.createElement("div"); el.className = "seat" + (you ? " you" : "");
-    el.innerHTML = `<h2>${name}</h2><div class="avatar">${you ? '<span class="youbadge">' + T.you + '</span>' : fly}</div><span class="paddle"></span><div class="mark"></div><dl class="meta"></dl>`;
+    el.innerHTML = `<h2>${name}</h2><div class="avatar">${you ? person : fly}</div><span class="paddle"></span><div class="mark"></div><dl class="meta"></dl>`;
     return {el, name, you, paddle: el.querySelector(".paddle"), mark: el.querySelector(".mark"), meta: el.querySelector(".meta"), right: 0, n: 0, streak: 0, best: 0};
   }
   const flies = D.arms.map((a, j) => Object.assign(makeSeat(T.arms[a.key], false), {j, acc: a.acc}));
