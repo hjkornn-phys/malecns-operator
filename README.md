@@ -61,6 +61,11 @@ score it against the real fly. The earlier questions, and what they left standin
 - With a time axis, the untrained wiring integrates about 2.4x more slowly than
   its degree-matched shuffles, uniformly across odors — a graph property, not an
   odor-specific rate code — [Step 12](#step-12-a-time-axis-on-olfaction).
+- Closing the loop, scrambled wiring steers WORSE than random turning: a fly on
+  the real wiring reaches an odour source 0.135 of the time against 0.005–0.045
+  for five shuffled seeds and 0.120 for random turns — but the typical fly of
+  either arm gets nowhere, so the composite verdict fails
+  — [Step 13](#step-13-walking-to-the-smell).
 - The untrained wiring already carries taste identity to descending neurons,
   including from neurons never used in training; shuffled wiring does not —
   [Step 2a](#step-2a-can-taste-be-read-from-the-untrained-network).
