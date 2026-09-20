@@ -45,7 +45,7 @@ decided by rules written into its script's docstring and committed before the
 run. The method those rules follow — what has to be measured before a threshold
 is chosen, what a result may claim, and the predictions registered before each
 run — lives in the
-separate record kept beside this repository, in
+files at the top of this repository,
 `METHOD.md` and `PREDICTIONS.md`. Predictions that turned out wrong are kept.
 
 ## How it got here
@@ -350,7 +350,7 @@ split; Step 3 then scores those trained gains against the fly.
 ### Step 2a: can taste be read from the untrained network?
 
 Before training anything, check whether the network as wired already carries
-taste to its output. Rules were committed (`91bd611`) before the run.
+taste to its output. Rules were committed (`68fd665`) before the run.
 
 ```sh
 uv run --project .. --extra torch python ../scripts/step2a_taste.py --seeds=10   # ~15 min, 1.58 GB
@@ -399,7 +399,7 @@ pools neurons of the same taste. Chance is 0.25.
 
 Step 2a could not separate compaction from random pruning (R4). This run tried
 to fix that with a harder task and six times the test samples. Rules were
-committed (`1daaf27`) before the run.
+committed (`3194e93`) before the run.
 
 ```sh
 uv run --project .. --extra torch python ../scripts/step2a_mix.py --seeds=10   # ~44 min, 1.51 GB
@@ -440,7 +440,7 @@ network's answer differs from the baseline's, paired over the same samples.
 
 ### Step 2b: training the gains on the taste task
 
-Rules were committed (`18b6831`) before the run. The first design was dropped
+Rules were committed (`dd59bc9`) before the run. The first design was dropped
 before it produced a number: a smoke test showed the logistic readout loss on the
 2a training set sitting at 0.001 with a gradient of 5e-6, because that set is
 separable, so Adam was doing a random walk. Per-feature standardisation then blew
@@ -477,7 +477,7 @@ though the loss did not: alpha from a flat 0.9 to [0.951, 0.570, 0.970, 0.531,
 This closes the loop [Result 1](#result-1-similarity-to-the-real-fly-could-not-be-established)
 opened. The 149 experimental outcomes were never in Step 2b's training data, so
 they are genuinely held out, and they are scored here under the **same rules,
-unchanged**. Rules were committed (`fdd3527`) before the run.
+unchanged**. Rules were committed (`39f32b4`) before the run.
 
 ```sh
 uv run --project .. python ../scripts/step3_rescore.py --seeds=10   # ~11 min
@@ -548,7 +548,7 @@ changed". That is recorded in `PREDICTIONS.md`.
 
 ## Step 4: a dark patch reaches the giant fiber, and stops there
 
-Rules were committed (`ec8b12e`) before the run. Read the docstring for what this
+Rules were committed (`7a0982e`) before the run. Read the docstring for what this
 does NOT test: not looming, because frames are solved independently and the model
 has no time axis; not movement, because there is no body.
 
@@ -603,7 +603,7 @@ itself: in the fly, `DNp01 -> TTMn` and `DNp01 -> PSI` are ShakB-mediated
 rectifying **electrical** synapses alongside their chemical ones, and MaleCNS
 carries no gap junctions, so only the minor partner is in the data. This run puts
 the electrical component back as a **declared modification** and measures what it
-buys. Rules were committed (`e7015cd`) before the run.
+buys. Rules were committed (`194d50d`) before the run.
 
 ```sh
 uv run --project .. python ../scripts/step5_gapjunction.py --seeds=10   # ~14 min, 1.2 GB
@@ -648,7 +648,7 @@ G2-G5 were not evaluated, since the rules make them conditional on G1.
 
 ## Step 6: pheromone routing — the question was not answered, and the design is why
 
-Rules were committed (`f208010`) before the run. Three receptor-labelled channels
+Rules were committed (`072669f`) before the run. Three receptor-labelled channels
 (putative ppk23 269, ppk25 257, IR52b 226, all leg and wing bristle GRNs) were
 compared against sugar, water and bitter, every channel subsampled to 17 bodies
 over 10 draws, scored as the share of a channel's drive landing on a readout.
@@ -705,7 +705,7 @@ and showed the primary readout had been the wrong one: on pC1 everything sat
 inside the shuffled range, while on the 1,258 male-specific neurons two channels
 sat well outside it in opposite directions. That reading generated a hypothesis,
 which this run tests. Rules and the lookup that set them were committed
-(`51a00eb`) before the run.
+(`387c447`) before the run.
 
 ```sh
 uv run --project .. python ../scripts/step7_ir52b.py --seeds=20   # ~8 min, 1.2 GB
@@ -780,7 +780,7 @@ channels go to **different places** — WG1's leading targets are `AN23B002` and
 
 ### Step 7b: it survives the split
 
-`step7b_sides.py` (rules `467d670`, ~7 min) redoes the side split on `rootSide`,
+`step7b_sides.py` (rules `53a075e`, ~7 min) redoes the side split on `rootSide`,
 which is populated 48/48 per wing type and 65/65 per leg type. A feasibility
 lookup ran first, from the same set definitions the run uses (`--lookup`): no
 duplicate bodies, no missing labels, no stimulus body inside a readout, every
@@ -812,7 +812,7 @@ runs, and their outcomes, are in `PREDICTIONS.md`.
 
 ## Step 8: a time axis buys no velocity signal
 
-Rules were committed (`466c77d`) before the run. The model gains a leak and one
+Rules were committed (`3c6df62`) before the run. The model gains a leak and one
 `lambda = dt/tau` per cell type; **nothing is trained**, so it is run forward only
 with no stored activation and no backpropagation through time. At `lambda = 1` it
 is Step 4's fixed-point iteration exactly.
@@ -905,7 +905,7 @@ The steady-state model has no time axis, so one is attached from outside: a smal
 trained memory, a 16-unit GRU, carried from frame to frame. The connectome is a
 fixed encoder for each frame, and every bit of time dependence belongs to the
 memory. A trial shows taste A, then D blank frames, then taste B, and asks whether
-they are the same taste. Rules were committed (`a3d5e76`) before the run and
+they are the same taste. Rules were committed (`f9b2cd4`) before the run and
 marked a pilot: taste pools are too small for a confirmatory test.
 
 ```sh
@@ -942,7 +942,7 @@ frames was wrong.
 
 ## Step 10: the memory game on real odors
 
-The same question, confirmatory, on olfaction. Rules were committed (`9aeb994`)
+The same question, confirmatory, on olfaction. Rules were committed (`2cee1bd`)
 before the run.
 
 ```sh
@@ -1122,7 +1122,7 @@ or figures made from step 10 — is shared under CC BY-SA 4.0.
 The first task here that nothing trains. No memory box, no fitted gains — the
 only quantity estimated from data in the whole run is **one centering scalar per
 arm**, and it is estimated on calibration trials that share no odor with any test
-set. Rules and all eight verdicts were committed (`945b81b`) before the run.
+set. Rules and all eight verdicts were committed (`1f9c70c`) before the run.
 
 ```sh
 uv run --project .. python ../scripts/step11_side.py          # ~85 min, 1.9 GB
@@ -1193,7 +1193,7 @@ already silent before time was added (LK-8: DNp01_R's whole range was
 0.0002–0.0061, and LPLC2 never cleared its own null at any radius). Olfaction is
 the opposite case, so the question was asked again where the signal is alive.
 **Step 8's numbers are not reused**; LK-13 measured olfaction's own. Rules were
-committed (`123b03e`) before the run. Nothing is trained and the statistic has
+committed (`a7f4743`) before the run. Nothing is trained and the statistic has
 zero parameters — not even step 11's one centering scalar.
 
 ```sh
