@@ -25,6 +25,13 @@ you can play along. Every answer is a real benchmark item from step 10; the stre
 and the flies are illustration. Built by `scripts/viz/export_memory_match.py`; the odor
 response values on the cards are CC BY-SA 4.0 (`docs/memory-match/LICENSE.md`).
 
+**Does the wiring matter?** [Three flies walk to a smell](https://hjkornn-phys.github.io/malecns-operator/surge/)
+([한국어](https://hjkornn-phys.github.io/malecns-operator/surge/ko.html)), or open
+`docs/surge/index.html` locally. The real wiring, one with its connections scrambled but its
+degrees and synapse counts kept, and one that turns at random — same controller, same odours,
+same starting points, nothing trained. Scrambled wiring steers worse than random turning.
+Every track drawn is one of step 13's scored episodes. Built by `scripts/viz/export_surge.py`.
+
 In plain words: the wiring turns scattered receptor neurons into a pattern where
 the same odor looks the same, even through neurons never used in training, and
 the one shuffled wiring checked this way does not. The trained memory reads only
