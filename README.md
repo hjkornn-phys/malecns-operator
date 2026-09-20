@@ -58,6 +58,9 @@ score it against the real fly. The earlier questions, and what they left standin
   one fixed point with nothing trained: 0.715 on odors and receptor neurons never
   used to set its one centering scalar, against ten null seeds spanning 0.441 to
   0.620 — [Step 11](#step-11-which-antenna-smelled-it).
+- With a time axis, the untrained wiring integrates about 2.4x more slowly than
+  its degree-matched shuffles, uniformly across odors — a graph property, not an
+  odor-specific rate code — [Step 12](#step-12-a-time-axis-on-olfaction).
 - The untrained wiring already carries taste identity to descending neurons,
   including from neurons never used in training; shuffled wiring does not —
   [Step 2a](#step-2a-can-taste-be-read-from-the-untrained-network).
@@ -1170,3 +1173,70 @@ The gate moved onto a positive control instead.
 - **Bilateral projection is not separated.** Most *Drosophila* ORNs project to
   both antennal lobes, so the decay at shallow gradients may be the connectome's
   pooling rather than this model's limit. LK-12 said so before the run.
+
+## Step 12: a time axis on olfaction
+
+Step 8 added time to the escape pathway and found nothing — but that pathway was
+already silent before time was added (LK-8: DNp01_R's whole range was
+0.0002–0.0061, and LPLC2 never cleared its own null at any radius). Olfaction is
+the opposite case, so the question was asked again where the signal is alive.
+**Step 8's numbers are not reused**; LK-13 measured olfaction's own. Rules were
+committed (`123b03e`) before the run. Nothing is trained and the statistic has
+zero parameters — not even step 11's one centering scalar.
+
+```sh
+uv run --project .. python ../scripts/step12_odor_dynamics.py           # ~47 min, 2.0 GB
+uv run --project .. python ../scripts/step12_odor_dynamics.py --lookup  # LK-13
+```
+
+**The stimulus, and the step 8 D1 fix.** Odor concentration follows a triangle,
+0 → 1 → 0 over `s` frames each way. Step 8's D1 passed on an onset transient
+because loom and recede were never matched at onset. Here the rising and falling
+limbs are compared **only at frames carrying the same instantaneous
+concentration**, inside one trial on one odor sample, against a blank column at
+the matching frame. Level is held constant by construction; what remains is the
+sign of the rate.
+
+**The step 8 D6 fix, and what it cost.** D6 could say nothing about tau because
+raising the spread also slowed the whole network. Here `lam0` is a constant
+(0.1353) reused at every sigma, so mean log lambda is identical and spread is the
+only thing varying. But stability requires `max lam = lam0 / min(m) ≤ 1`, so
+**sigma > 0 forces lam0 < 1** — and since the imposed leak is identical in every
+arm, a slower network dilutes the wiring's own contribution (real-to-shuffled
+went 9x at lam 1 to 1.18x at lam 0.1353). Primary verdicts therefore run at
+lam = 1; E5 is asked in the compressed regime and was declared **low power** in
+the rules rather than after the fact.
+
+**What smoke caught before the run.** The first draft scored E2 on `RATEACC`, the
+fraction of matched pairs where the falling limb is higher. It saturates at
+1.000 in *every* arm — which is precisely step 8's D3 defect, a strict win
+demanded on a statistic both sides had maxed out. Verdicts moved to `HYST`;
+`RATEACC` is still printed so the saturation stays visible. Recorded as PR-9 in
+`PREDICTIONS.md`, with PR-8 left unedited.
+
+**Result.** Every verdict came out as predicted, including E4, which was
+registered to fail.
+
+| arm | static level | HYST s=10 / 25 / 60 |
+|---|---|---|
+| **REAL** | **4.59e-3** | **+0.460 / +0.224 / +0.101** |
+| SHUF, five seeds | 5.47–5.89e-4 | +0.191–0.197 / +0.080–0.082 / +0.034–0.035 |
+
+E5 passed at every sigma — REAL 0.852 / 0.839 / 0.799 against shuffled maxima
+0.723 / 0.706 / 0.657, the gap *widening* as spread grows. E4 failed as
+registered: peak response is 0.1617 and does not separate, so a step 8-style peak
+statistic would have found nothing here.
+
+**What this does and does not say.** The per-odor HYST spread was sd 0.0519
+around a mean of 0.4599 — about 11%, against a real-to-shuffled gap of 0.268.
+PR-9 registered in advance that a small spread means **one global lag rather than
+an odor-specific rate code, even if every verdict passed**, and it did. So: the
+real wiring integrates more slowly than its degree-matched shuffles, almost
+uniformly across odors. A downstream neuron could read *"something is
+increasing"* from this, not *"this odor is increasing"*.
+
+**The significance is weak and the separation is not, and both belong in any
+quotation.** Five seeds give one-sided p ≈ 1/6, the convention steps 10 and 11
+used. But the null is nearly deterministic — the five seeds spanned 0.0057
+against a gap of 0.268, roughly 47 null spreads. More seeds are cheap and **were
+not run**.
