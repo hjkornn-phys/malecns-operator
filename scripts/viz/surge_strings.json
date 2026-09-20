@@ -1,0 +1,58 @@
+{
+  "en": {
+    "title": "<title>Does the wiring matter?</title>",
+    "stamp": "STEP 13 · NOTHING TRAINED",
+    "langlinks": "<a href=\"ko.html\">한국어</a>",
+    "repo": "repo",
+    "h1": "Does the wiring matter?",
+    "lede": "Three flies start the same distance from a smell, with the same number of connections, the same connection counts, and the same rule for what to do. Only one thing differs between them: which neuron is wired to which. Nothing here was trained.",
+    "panel_arms": "Flies",
+    "panel_ep": "Episode",
+    "you_join": "Fly it yourself",
+    "h_what": "What you are watching",
+    "p_what": "<p>The fly is a real one: the MaleCNS v1.0 connectome of a single male <em>Drosophila</em>, 166,700 neurons, run as a rate model. Odour concentration at its two antennae drives the olfactory receptor neurons. One step of network dynamics runs per frame, carrying its own state forward. The turn is read from lateral horn output: left side minus right side.</p><p><strong>The shuffled fly is the same brain with its wiring permuted</strong> — every neuron keeps its number of inputs and outputs and every synapse keeps its count, but who connects to whom is scrambled. It gets the identical controller, the identical odours, the identical starting points.</p><p><strong>The steering sign was measured, not chosen.</strong> On odours and receptor neurons it had never seen, the real wiring says which antenna was stimulated more with 0.715 accuracy against ten shuffled controls spanning 0.441 to 0.620. That measurement is what steers the fly here.</p><p>Every track drawn is one of the scored episodes — same seed, same batch, same condition. None of them was picked for looking good.</p>",
+    "h_scores": "The scores",
+    "p_scores": "Arrival rate over 200 episodes per arm. No episode begins pointed at the source: any start within 90° of facing it is rejected.",
+    "th_scores": "<th>Condition</th><th>Real</th><th>Shuffled ×5</th><th>Random</th><th>Oracle</th>",
+    "h_limits": "What this is not",
+    "p_limits": "<ul><li><strong>This is not how a fly navigates.</strong> A real fly does not steer on smell directly — odour updates a goal direction, and steering comes from comparing that goal against an internal compass in the central complex. None of that is here. What you are watching is closer to a bacterium following a gradient.</li><li><strong>Smooth gradients only.</strong> Walking flies in turbulent plumes navigate by the timing of odour encounters, not by the difference between their antennae. This says nothing about that case.</li><li><strong>Excitatory and inhibitory signs are predicted, not measured.</strong> They come from neurotransmitter identity: glutamate is treated as inhibitory, and 3,177 neurons with no clear call default to excitatory. Both arms carry the same assumption, so the comparison holds — but no claim about absolute circuit function does.</li><li><strong>There is no body.</strong> No legs, no ventral nerve cord, no inertia. The turn is read from a sensory area, not a motor one.</li><li><strong>“Turn toward the stronger side” is an assumption</strong> about attraction, not something the wiring supplied. Every arm gets it, including the shuffled ones.</li><li><strong>The statistics are weak.</strong> Five shuffled seeds give a one-sided p of about 1/6. The margin is wide; the number of seeds is not.</li></ul>",
+    "footer": "Built by <code>scripts/viz/export_surge.py</code> from step 13 of malecns-operator. Rules and verdicts were committed before the run; predictions were registered before that. Connectome: MaleCNS v1.0 (Janelia FlyEM), CC BY 4.0. Odour responses: Hallem &amp; Carlson 2006 via DoOR 2.0.1.",
+    "js": {
+      "play": "Play", "pause": "Pause", "reached": "reached",
+      "ep": "Episode {n} of {tot} · frame {f}/{max}",
+      "cond": "start {r} mm, p={p}",
+      "you_keys": "← → to turn. You move at the same speed, with the same turn.",
+      "you_win": "You reached the smell.",
+      "you_lose": "Out of frames.",
+      "arms": {"REAL": "Real wiring", "SHUF-1000": "Shuffled wiring", "RANDOM-WALK": "Random turns", "ORACLE": "Knows the answer"}
+    }
+  },
+  "ko": {
+    "title": "<title>배선이 중요한가?</title>",
+    "stamp": "STEP 13 · 학습 없음",
+    "langlinks": "<a href=\"index.html\">English</a>",
+    "repo": "저장소",
+    "h1": "배선이 중요한가?",
+    "lede": "파리 세 마리가 냄새로부터 같은 거리에서 출발합니다. 연결 개수도 같고, 시냅스 수도 같고, 무엇을 할지 정하는 규칙도 같습니다. 다른 것은 단 하나 — 어느 뉴런이 어느 뉴런과 이어져 있는가. 아무것도 학습시키지 않았습니다.",
+    "panel_arms": "파리",
+    "panel_ep": "에피소드",
+    "you_join": "직접 몰아보기",
+    "h_what": "지금 보고 있는 것",
+    "p_what": "<p>진짜 파리입니다. 수컷 초파리 한 마리의 MaleCNS v1.0 커넥톰, 뉴런 166,700개를 발화율 모델로 돌립니다. 두 더듬이의 냄새 농도가 후각 수용 뉴런을 구동하고, 매 프레임 네트워크 동역학이 한 스텝 진행되며 자기 상태를 이어갑니다. 회전은 측각(lateral horn) 출력의 좌우 차이에서 읽습니다.</p><p><strong>섞은 파리는 같은 뇌의 배선만 뒤섞은 것입니다.</strong> 모든 뉴런이 입력·출력 개수를 그대로 유지하고 모든 시냅스가 개수를 유지하지만, 누가 누구와 이어지는지만 흐트러뜨렸습니다. 컨트롤러도, 냄새도, 출발점도 완전히 동일합니다.</p><p><strong>조향 부호는 고른 게 아니라 측정한 것입니다.</strong> 한 번도 본 적 없는 냄새와 수용 뉴런에서, 진짜 배선은 어느 더듬이가 더 자극됐는지를 0.715로 맞힙니다. 섞은 대조군 열 개는 0.441~0.620이었고요. 여기서 파리를 조종하는 게 바로 그 측정값입니다.</p><p>그려지는 궤적은 전부 실제로 채점된 에피소드입니다 — 같은 시드, 같은 배치, 같은 조건. 보기 좋은 걸 골라낸 게 아닙니다.</p>",
+    "h_scores": "점수",
+    "p_scores": "arm당 200 에피소드의 도착률. 소스를 향해 출발하는 에피소드는 없습니다 — 정면 기준 90° 이내로 출발하면 기각됩니다.",
+    "th_scores": "<th>조건</th><th>진짜</th><th>섞은 것 ×5</th><th>무작위</th><th>정답</th>",
+    "h_limits": "이것이 아닌 것",
+    "p_limits": "<ul><li><strong>초파리가 이렇게 냄새를 쫓지는 않습니다.</strong> 실제 초파리는 냄새로 직접 조향하지 않습니다. 냄새는 목표 방향을 갱신하고, 조향은 그 목표와 중심복합체의 내부 나침반을 비교해서 나옵니다. 그 단계가 여기엔 전혀 없습니다. 지금 보시는 건 기울기를 따라가는 박테리아에 가깝습니다.</li><li><strong>매끄러운 기울기에서만입니다.</strong> 난류 플룸을 걷는 초파리는 좌우 차이가 아니라 냄새를 만나는 타이밍으로 길을 찾습니다. 그 경우에 대해서는 아무 말도 하지 않습니다.</li><li><strong>흥분/억제 부호는 측정값이 아니라 예측값입니다.</strong> 신경전달물질에서 추정한 것으로, 글루탐산은 억제성으로 처리하고 판정이 불분명한 3,177개는 흥분성을 기본값으로 둡니다. 양쪽 arm이 같은 가정을 쓰므로 비교는 성립하지만, 회로 기능에 대한 절대적 주장은 성립하지 않습니다.</li><li><strong>몸이 없습니다.</strong> 다리도, 배쪽 신경삭도, 관성도 없습니다. 회전은 운동 영역이 아니라 감각 영역에서 읽습니다.</li><li><strong>“센 쪽으로 돈다”는 가정입니다.</strong> 유인인지 기피인지에 대한 가정이지 배선이 알려준 게 아닙니다. 섞은 것을 포함해 모든 arm이 동일하게 받습니다.</li><li><strong>통계는 약합니다.</strong> 섞은 시드 다섯 개는 단측 p ≈ 1/6입니다. 격차는 크지만 시드 수는 적습니다.</li></ul>",
+    "footer": "malecns-operator 13단계 결과로 <code>scripts/viz/export_surge.py</code>가 생성. 규칙과 판정은 실행 전에 커밋되었고, 예측은 그보다 먼저 등록되었습니다. 커넥톰: MaleCNS v1.0 (Janelia FlyEM), CC BY 4.0. 냄새 반응: Hallem &amp; Carlson 2006, DoOR 2.0.1 경유.",
+    "js": {
+      "play": "재생", "pause": "정지", "reached": "도착",
+      "ep": "에피소드 {n}/{tot} · 프레임 {f}/{max}",
+      "cond": "출발 {r} mm, p={p}",
+      "you_keys": "← → 로 회전. 속도와 회전각은 파리와 같습니다.",
+      "you_win": "냄새에 도착했습니다.",
+      "you_lose": "프레임 소진.",
+      "arms": {"REAL": "진짜 배선", "SHUF-1000": "섞은 배선", "RANDOM-WALK": "무작위 회전", "ORACLE": "정답을 아는 파리"}
+    }
+  }
+}

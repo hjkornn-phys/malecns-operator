@@ -1,0 +1,205 @@
+{{title}}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans+KR:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* A night field seen from above. Painted explicitly, identical on light and dark hosts. */
+:root{
+  --field:#121820; --field-deep:#0B1016; --rail:#080C11; --edge:#27333F; --ink:#E6EDF3; --ink-dim:#90A2B2;
+  --real:#F2A03D; --shuf:#7FA8D4; --rand:#8A8A94; --oracle:#6FD497; --you:#E9D46A; --bad:#F2837A;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--rail);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1060px;margin:0 auto;padding-inline:16px;padding-block:26px 46px;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-direction:column;gap:9px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.lang{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.lang a{color:var(--ink-dim);font-family:var(--mono);font-size:13px}
+.lang a.repo{color:var(--ink);text-decoration:none;border:1px solid var(--edge);border-radius:7px;padding:4px 10px;background:var(--field-deep)}
+.lang a:hover,.lang a:focus-visible{color:var(--ink)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(29px,5.2vw,50px);line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.lede{margin:0;max-width:68ch;color:var(--ink-dim)}
+.stamp{align-self:flex-start;font-family:var(--mono);font-size:12px;letter-spacing:.06em;border:1.5px solid var(--edge);color:var(--ink-dim);padding:3px 9px;border-radius:3px}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px}
+@media(max-width:760px){.stage{grid-template-columns:1fr}}
+.arena{position:relative;background:var(--field-deep);border:1px solid var(--edge);border-radius:12px;overflow:hidden;aspect-ratio:1/1}
+canvas{display:block;width:100%;height:100%}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel{background:var(--field);border:1px solid var(--edge);border-radius:11px;padding:12px 13px}
+.panel h2{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-dim);margin:0 0 9px}
+.arm{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:14px}
+.dot{width:11px;height:11px;border-radius:50%;flex:none}
+.arm .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arm .v{font-family:var(--mono);font-size:13px;color:var(--ink-dim)}
+.arm.hit .v{color:var(--ink)}
+.bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+button{font:inherit;font-size:14px;color:var(--ink);background:var(--field-deep);border:1px solid var(--edge);border-radius:7px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:var(--ink-dim)}
+button:focus-visible{outline:2px solid var(--you);outline-offset:2px}
+button.on{border-color:var(--you);color:var(--you)}
+.lbl{font-family:var(--mono);font-size:13px;color:var(--ink-dim)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:right;padding:5px 7px;border-bottom:1px solid var(--edge)}
+th:first-child,td:first-child{text-align:left}
+th{font-family:var(--mono);font-weight:500;font-size:12px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.04em}
+td.num{font-family:var(--mono)}
+section.prose{max-width:72ch}
+section.prose h2{font-family:var(--display);font-weight:800;font-size:clamp(20px,3vw,26px);margin:0 0 8px}
+section.prose p{margin:0 0 11px}
+ul{margin:0 0 11px;padding-left:20px}
+li{margin-bottom:6px}
+.limits{border-left:3px solid var(--bad);padding-left:14px}
+.limits h2{color:var(--ink)}
+code{font-family:var(--mono);font-size:.92em;background:var(--field);border:1px solid var(--edge);border-radius:4px;padding:1px 5px}
+footer{color:var(--ink-dim);font-size:13px;border-top:1px solid var(--edge);padding-top:14px}
+a{color:var(--you)}
+</style>
+<div class="wrap">
+<header>
+  <div class="topline">
+    <span class="stamp">{{stamp}}</span>
+    <span class="lang">{{langlinks}}<a class="repo" href="https://github.com/hjkornn-phys/malecns-operator">{{repo}}</a></span>
+  </div>
+  <h1>{{h1}}</h1>
+  <p class="lede">{{lede}}</p>
+</header>
+
+<div class="stage">
+  <div class="arena"><canvas id="cv" width="900" height="900"></canvas></div>
+  <div class="side">
+    <div class="panel">
+      <h2>{{panel_arms}}</h2>
+      <div id="arms"></div>
+    </div>
+    <div class="panel">
+      <h2>{{panel_ep}}</h2>
+      <div class="bar">
+        <button id="play"></button>
+        <button id="prev">&larr;</button><button id="next">&rarr;</button>
+      </div>
+      <p class="lbl" id="epinfo" style="margin:9px 0 0"></p>
+      <div class="bar" style="margin-top:9px">
+        <button id="youbtn">{{you_join}}</button>
+      </div>
+      <p class="lbl" id="youinfo" style="margin:7px 0 0"></p>
+    </div>
+  </div>
+</div>
+
+<section class="prose">
+  <h2>{{h_what}}</h2>
+  {{p_what}}
+</section>
+
+<section class="prose">
+  <h2>{{h_scores}}</h2>
+  <p>{{p_scores}}</p>
+  <table><thead><tr>{{th_scores}}</tr></thead><tbody id="scores"></tbody></table>
+</section>
+
+<section class="prose limits">
+  <h2>{{h_limits}}</h2>
+  {{p_limits}}
+</section>
+
+<footer>{{footer}}</footer>
+</div>
+<script>
+const D = __FLYDATA__, T = __I18N__;
+const cv = document.getElementById("cv"), cx = cv.getContext("2d");
+const R = 1.35 * D.meta.r0, S = cv.width / (2 * R);          // world mm -> px
+const X = x => cv.width / 2 + x * S, Y = y => cv.height / 2 - y * S;
+let ep = 0, fr = 0, playing = true, you = null;
+const NF = Math.max(...D.arms.map(a => a.paths[0].length));
+
+function drawField(){
+  cx.fillStyle = "#0B1016"; cx.fillRect(0, 0, cv.width, cv.height);
+  const g = cx.createRadialGradient(X(0), Y(0), 0, X(0), Y(0), R * S);
+  g.addColorStop(0, "rgba(242,160,61,.30)"); g.addColorStop(.35, "rgba(242,160,61,.08)");
+  g.addColorStop(1, "rgba(242,160,61,0)");
+  cx.fillStyle = g; cx.fillRect(0, 0, cv.width, cv.height);
+  cx.strokeStyle = "rgba(230,237,243,.12)"; cx.lineWidth = 1;
+  for(let r = 1; r <= Math.floor(R); r++){
+    cx.beginPath(); cx.arc(X(0), Y(0), r * S, 0, 7); cx.stroke();
+  }
+  cx.strokeStyle = "rgba(242,160,61,.85)"; cx.lineWidth = 2;
+  cx.beginPath(); cx.arc(X(0), Y(0), D.meta.arrive * S, 0, 7); cx.stroke();
+  cx.fillStyle = "rgba(242,160,61,.9)";
+  cx.beginPath(); cx.arc(X(0), Y(0), 4, 0, 7); cx.fill();
+}
+function drawTrack(pts, n, col, live){
+  if(n < 2) return;
+  cx.strokeStyle = col; cx.lineWidth = 2; cx.globalAlpha = .55;
+  cx.beginPath(); cx.moveTo(X(pts[0][0]), Y(pts[0][1]));
+  for(let i = 1; i < n; i++) cx.lineTo(X(pts[i][0]), Y(pts[i][1]));
+  cx.stroke(); cx.globalAlpha = 1;
+  const p = pts[n - 1], q = pts[Math.max(0, n - 4)];
+  const a = Math.atan2(p[1] - q[1], p[0] - q[0]);
+  cx.save(); cx.translate(X(p[0]), Y(p[1])); cx.rotate(-a);
+  cx.fillStyle = col; cx.globalAlpha = live ? 1 : .45;
+  cx.beginPath(); cx.moveTo(8, 0); cx.lineTo(-5, 4.5); cx.lineTo(-5, -4.5); cx.closePath(); cx.fill();
+  cx.restore(); cx.globalAlpha = 1;
+}
+function stepYou(){
+  if(!you || you.done) return;
+  const d = Math.hypot(you.x, you.y);
+  if(d < D.meta.arrive){ you.done = true; you.arrived = true; return; }
+  you.th += (you.turn === "L" ? 1 : -1) * D.meta.turn_deg * Math.PI / 180;
+  you.x += D.meta.step * Math.cos(you.th); you.y += D.meta.step * Math.sin(you.th);
+  you.path.push([you.x, you.y]); you.n++;
+  if(you.n >= D.meta.frames) you.done = true;
+}
+function render(){
+  drawField();
+  D.arms.forEach(a => { if(a.show) drawTrack(a.paths[ep], Math.min(fr + 1, a.paths[ep].length), a.color, fr < a.paths[ep].length); });
+  if(you) drawTrack(you.path, you.path.length, "#E9D46A", !you.done);
+  document.querySelectorAll(".arm").forEach(el => {
+    const a = D.arms[+el.dataset.i], hit = a.arrived[ep];
+    el.classList.toggle("hit", hit && fr >= a.paths[ep].length - 1);
+    el.querySelector(".v").textContent = (hit && fr >= a.paths[ep].length - 1) ? T.reached : "";
+  });
+  document.getElementById("epinfo").textContent =
+    T.ep.replace("{n}", ep + 1).replace("{tot}", D.meta.n_shown).replace("{f}", Math.min(fr, NF)).replace("{max}", NF);
+  if(you) document.getElementById("youinfo").textContent =
+    you.arrived ? T.you_win : (you.done ? T.you_lose : T.you_keys);
+}
+function tick(){ if(playing && fr < NF){ fr++; stepYou(); } render(); }
+function setEp(i){ ep = (i + D.meta.n_shown) % D.meta.n_shown; fr = 0; if(you) startYou(); render(); }
+function startYou(){
+  const p0 = D.arms[0].paths[ep][0];
+  you = {x: p0[0], y: p0[1], th: Math.atan2(-p0[1], -p0[0]) + Math.PI, turn: "L", n: 0, done: false, arrived: false, path: [[p0[0], p0[1]]]};
+}
+const armsEl = document.getElementById("arms");
+D.arms.forEach((a, i) => {
+  a.show = true;
+  const el = document.createElement("div"); el.className = "arm"; el.dataset.i = i;
+  el.innerHTML = `<span class="dot" style="background:${a.color}"></span><span class="nm">${T.arms[a.key] || a.key}</span><span class="v"></span>`;
+  el.style.cursor = "pointer";
+  el.onclick = () => { a.show = !a.show; el.style.opacity = a.show ? 1 : .35; render(); };
+  armsEl.appendChild(el);
+});
+const tb = document.getElementById("scores");
+D.conditions.forEach(c => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td>${T.cond.replace("{r}", c.r0).replace("{p}", c.p)}</td>` +
+    [c.real, c.shuf_lo + "–" + c.shuf_hi, c.rand, c.oracle].map(v => `<td class="num">${v}</td>`).join("");
+  if(c.primary) tr.style.color = "var(--ink)";
+  tb.appendChild(tr);
+});
+const pb = document.getElementById("play");
+function syncPlay(){ pb.textContent = playing ? T.pause : T.play; pb.classList.toggle("on", playing); }
+pb.onclick = () => { if(fr >= NF) fr = 0; playing = !playing; syncPlay(); };
+document.getElementById("prev").onclick = () => setEp(ep - 1);
+document.getElementById("next").onclick = () => setEp(ep + 1);
+document.getElementById("youbtn").onclick = () => { if(you){ you = null; } else { startYou(); } render(); };
+addEventListener("keydown", e => {
+  if(e.key === "ArrowLeft"){ if(you) you.turn = "L"; else setEp(ep - 1); e.preventDefault(); }
+  if(e.key === "ArrowRight"){ if(you) you.turn = "R"; else setEp(ep + 1); e.preventDefault(); }
+  if(e.key === " "){ pb.click(); e.preventDefault(); }
+});
+syncPlay(); render(); setInterval(tick, 55);
+</script>

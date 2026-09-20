@@ -94,7 +94,10 @@ Readings, not verdicts: per-step decision accuracy measured inside the loop, aga
   under p = 1 and p = 3; time to arrival.
 
 Run from data/ after retention.py (and step10_odor_delay.py for door/):
-  step13_surge.py [--smoke]
+  step13_surge.py [--smoke] [--export=N]
+--export=N: record the xy tracks of the first N episodes at the primary condition for the figure, with the
+  same seed and the same 200-episode batch as the verdict run, so every track drawn is a SCORED episode.
+  Computes no verdict and writes step13_paths.json.
 """
 import csv, json, os, resource, subprocess, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -105,6 +108,7 @@ import torch
 import fpmodel as fm
 
 SMOKE = "--smoke" in sys.argv
+EXPORT = int(next((a.split("=")[1] for a in sys.argv if a.startswith("--export=")), 0))
 UNITS = ["Or10a", "Or19a", "Or22a", "Or23a", "Or2a", "Or35a", "Or43a", "Or43b", "Or47a", "Or47b", "Or49b",
          "Or59b", "Or65a", "Or67a", "Or67c", "Or7a", "Or82a", "Or85a", "Or85b", "Or85f", "Or88a", "Or98a", "Or9a"]
 RECEPTOR_TYPE = {"Or10a": "DL1", "Or19a": "DC1", "Or22a": "DM2", "Or23a": "DA3", "Or2a": "DA4m", "Or35a": "VC3",
@@ -219,8 +223,11 @@ def conc(d, p):
     return (D0 / np.maximum(d, 1e-3)) ** p
 
 
-def episode_batch(W, m, p, r0, seed, mode):
-    """One batch of N_EP episodes run in parallel as columns. mode: net | random | oracle."""
+def episode_batch(W, m, p, r0, seed, mode, keep_paths=0):
+    """One batch of N_EP episodes run in parallel as columns. mode: net | random | oracle.
+    keep_paths > 0 records the xy track of the first that many episodes, for the figure. It changes
+    nothing about the run: the recorded episodes ARE scored episodes of the same batch."""
+    track = []
     rng = np.random.default_rng(seed)
     ods = rng.choice(HELD_ODOR, N_EP)
     pos = np.zeros((N_EP, 2)); pos[:, 0] = r0
@@ -259,14 +266,36 @@ def episode_batch(W, m, p, r0, seed, mode):
         th = th + np.where(go_left, TURN, -TURN)
         pos[live] += STEP * np.stack([np.cos(th[live]), np.sin(th[live])], 1)
         plen[live] += STEP
+        if keep_paths: track.append(np.round(pos[:keep_paths], 4).copy())
     d_final = np.linalg.norm(pos, axis=1)
     eff = np.where(done, plen / r0, np.nan)
     progress = (r0 - d_final) / np.maximum(plen, 1e-9)         # net gain per mm walked, defined for EVERY episode
     return {"arrival": float(done.mean()), "t_arrive": float(np.nanmedian(np.where(done, tarr, np.nan))),
             "d_final": float(np.median(d_final)), "progress": float(np.median(progress)),
             "path_eff": float(np.nanmedian(eff)) if done.any() else None,
-            "step_acc": float(hits.sum() / max(shots.sum(), 1)), "n": int(N_EP)}
+            "step_acc": float(hits.sum() / max(shots.sum(), 1)), "n": int(N_EP),
+            **({"paths": np.stack(track, 1).tolist(),
+                "arrived": done[:keep_paths].tolist()} if keep_paths else {})}
 
+
+if EXPORT:
+    # Same seed, same batch size, same condition as the verdict run, so every recorded track is one of the
+    # scored episodes. Only the primary condition is run, and no verdict is computed.
+    out = {"condition": {"p": P_PRIMARY, "r0": R0_PRIMARY, "n_shown": EXPORT, "n_scored": N_EP},
+           "geometry": {"s_ant": S_ANT, "step": STEP, "turn_deg": 30, "frames": FRAMES,
+                        "arrive": ARRIVE, "theta_min_deg": 90}, "arms": {}}
+    for nm, md, sd in (("ORACLE", "oracle", 950), ("RANDOM-WALK", "random", 951)):
+        out["arms"][nm] = episode_batch(None, 0.0, P_PRIMARY, R0_PRIMARY, sd, md, keep_paths=EXPORT)
+        print(f"  {nm} arrival {out['arms'][nm]['arrival']:.3f} ({time.time()-t0:.0f}s)", flush=True)
+    for nm, sd in (("REAL", None), ("SHUF-1000", 1000)):
+        W = encoder(sd); m = calibrate(W)
+        out["arms"][nm] = episode_batch(W, m, P_PRIMARY, R0_PRIMARY, 960, "net", keep_paths=EXPORT)
+        out["arms"][nm]["m"] = m
+        print(f"  {nm} arrival {out['arms'][nm]['arrival']:.3f} ({time.time()-t0:.0f}s)", flush=True)
+        del W
+    json.dump(out, open("step13_paths.json", "w"))
+    print(f"wrote step13_paths.json ({time.time()-t0:.0f}s, {gb():.2f} GB)")
+    sys.exit(0)
 
 res, t_arm = {}, {}
 CONDS = [(P_PRIMARY, R0_PRIMARY)] + [(p, R0_PRIMARY) for p in P_ALL if p != P_PRIMARY] \
