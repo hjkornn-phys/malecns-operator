@@ -78,7 +78,10 @@ Readings, not verdicts: ORACLE against REAL as a ceiling; the offset m per arm a
 against the odor's Hallem response norm.
 
 Run from data/ after retention.py (and step10_odor_delay.py for door/):
-  step11_side.py [--smoke] [--lookup]
+  step11_side.py [--smoke] [--lookup] [--seeds=N]
+--seeds=N: N shuffled AND N readout-permutation seeds instead of 5. The verdicts are unchanged; only the
+  strength of the rank test moves, to one-sided p ~ 1/(N+1). Results go to step11_side_<N>seeds.json so the
+  five-seed run is not overwritten.
 --lookup: side-field coverage, pool balance, offset stability and timing. No verdicts.
 --smoke: 24 trials per set, one SHUF and one PERM seed.
 """
@@ -92,8 +95,10 @@ import fpmodel as fm
 
 SMOKE, LOOKUP = "--smoke" in sys.argv, "--lookup" in sys.argv
 N_CAL, N_A, N_C, N_B = (24, 24, 24, 24) if SMOKE else (400, 400, 1000, 1000)
-SHUF_SEEDS = [1000] if SMOKE else [1000, 1001, 1002, 1003, 1004]
-PERM_SEEDS = [2000] if SMOKE else [2000, 2001, 2002, 2003, 2004]
+NSEED = int(next((a.split("=")[1] for a in sys.argv if a.startswith("--seeds=")), 5))
+SHUF_SEEDS = [1000] if SMOKE else list(range(1000, 1000 + NSEED))
+PERM_SEEDS = [2000] if SMOKE else list(range(2000, 2000 + NSEED))
+OUT = "step11_side.json" if NSEED == 5 else f"step11_side_{NSEED}seeds.json"
 SCALE, BG, BOOT, CHUNK = 163, 0.5, 2000, 100
 CONTRASTS = [(1.0, 0.0), (1.0, 0.25), (1.0, 0.5), (1.0, 0.8)]
 PRIMARY = (1.0, 0.5)
@@ -316,7 +321,7 @@ V = {}
 V["H  harness works"] = g("ORACLE", "test B")["lb"] > 0.90
 if not V["H  harness works"]:
     print(f"\nH FAILED: ORACLE test B lower bound {g('ORACLE', 'test B')['lb']:.3f} <= 0.90. Reading nothing else.")
-    json.dump({"verdicts": {k: bool(v) for k, v in V.items()}, "arms": res}, open("step11_side.json", "w"), indent=1)
+    json.dump({"verdicts": {k: bool(v) for k, v in V.items()}, "arms": res}, open(OUT, "w"), indent=1)
     sys.exit(1)
 V["V1 works in-dist"] = g("REAL", "test A")["lb"] > 0.5
 V["V2 generalises"] = g("REAL", "test B")["lb"] > 0.5
@@ -333,5 +338,5 @@ print("\n-- REAL test B over contrasts --")
 for c, s in zip(CONTRASTS, seq): print(f"  {c[0]}/{c[1]}: {s['acc']:.3f} ({s['lb']:.3f})  m {s['m']:+.3e}")
 json.dump({"primary": P, "verdicts": {k: bool(v) for k, v in V.items()}, "arms": res,
            "panel": {"per_side": int(sum(c[3] for c in cut.values())), "lh": [len(LH_L), len(LH_R)]}},
-          open("step11_side.json", "w"), indent=1)
-print(f"\nwrote step11_side.json ({time.time() - t_start:.0f}s, {gb():.2f} GB)")
+          open(OUT, "w"), indent=1)
+print(f"\nwrote {OUT} ({time.time() - t_start:.0f}s, {gb():.2f} GB)")

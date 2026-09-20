@@ -85,7 +85,8 @@ resolve. Every verdict below is a rank test against the five shuffled seeds or a
 
 Arms: REAL, baseline k>=3; SHUF, presynaptic partners permuted, seeds 1000..1004 (degrees and counts kept).
 
-Verdicts, fixed before running. One-sided p ~ 1/6 for each rank test, the convention steps 10 and 11 used.
+Verdicts, fixed before running. Each rank test is one-sided p ~ 1/(N+1) for N shuffled seeds: 1/6 at the
+default N = 5, 1/21 at --seeds=20, which is step 7's convention.
   E0 same model         at lam = 1 uniform, the final state reproduces step 11's fixed-point solve to max
                         abs difference < 1e-4. LK-13 measured 1.5e-8. If this fails the run STOPS.
   E1 signal above floor REAL's mean |x| over LH at the FIXED POINT with the odor held at full
@@ -109,7 +110,9 @@ Readings, not verdicts: HYST spread across odors, and the correlation of the per
   the 60-odor numbers restricted to step 10's held-out 33.
 
 Run from data/ after retention.py (and step10_odor_delay.py for door/):
-  step12_odor_dynamics.py [--smoke] [--lookup]
+  step12_odor_dynamics.py [--smoke] [--lookup] [--seeds=N]
+--seeds=N: N shuffled seeds instead of 5. Verdicts unchanged; only the rank test's strength moves. Results
+  go to step12_odor_dynamics_<N>seeds.json so the five-seed run is not overwritten.
 --lookup: LK-13's own measurements, two shuffled seeds, no verdicts.
 --smoke: 6 odors, one shuffled seed, sigma 0 only.
 """
@@ -133,7 +136,9 @@ LAM_SLOW = float(np.exp(-Z_CLIP * SIGMA_MAX))              # 0.1353, constant ac
 SPEEDS = [10, 25, 60]
 SIGMAS = [0.0, 0.5, 1.0]
 N_ODOR = 6 if SMOKE else 60
-SHUF_SEEDS = [1000] if SMOKE else [1000, 1001, 1002, 1003, 1004]
+NSEED = int(next((a.split("=")[1] for a in sys.argv if a.startswith("--seeds=")), 5))
+SHUF_SEEDS = [1000] if SMOKE else list(range(1000, 1000 + NSEED))
+OUT = "step12_odor_dynamics.json" if NSEED == 5 else f"step12_odor_dynamics_{NSEED}seeds.json"
 PRIMARY = [(1.0, 0.0, sp) for sp in SPEEDS]                # lam0, sigma, ramp speed
 TAU_ARM = [] if SMOKE else [(LAM_SLOW, sg, SPEEDS[0]) for sg in SIGMAS]
 COMBOS = PRIMARY + TAU_ARM
@@ -299,7 +304,7 @@ e0 = e0_check(W_real)
 print(f"\nE0 lam=1 vs fixed point: {e0:.3e}", flush=True)
 if not e0 < 1e-4:
     print("E0 FAILED: the dynamics is not the same model. Stopping.")
-    json.dump({"E0": e0, "verdicts": {"E0 same model": False}}, open("step12_odor_dynamics.json", "w"), indent=1)
+    json.dump({"E0": e0, "verdicts": {"E0 same model": False}}, open(OUT, "w"), indent=1)
     sys.exit(1)
 
 for arm, seed in [("REAL", None)] + [(f"SHUF-{s}", s) for s in SHUF_SEEDS]:
@@ -339,5 +344,5 @@ print(f"\nreading: per-odor HYST spread at s {SPEEDS[0]} -- mean {po.mean():+.4f
       f"min {po.min():+.4f} max {po.max():+.4f}  (a small sd means one global lag, not an odor-specific signal)")
 json.dump({"E0": e0, "LAM_SLOW": LAM_SLOW, "verdicts": {k: (None if v is None else bool(v)) for k, v in V.items()},
            "arms": res, "odors": ODOR_IDX.tolist(), "held_mask": IS_HELD.tolist()},
-          open("step12_odor_dynamics.json", "w"), indent=1)
-print(f"\nwrote step12_odor_dynamics.json ({time.time() - t_start:.0f}s, {gb():.2f} GB)")
+          open(OUT, "w"), indent=1)
+print(f"\nwrote {OUT} ({time.time() - t_start:.0f}s, {gb():.2f} GB)")
