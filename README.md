@@ -54,6 +54,10 @@ score it against the real fly. The earlier questions, and what they left standin
   [Pipeline](#pipeline).
 - Training through the fixed point works: implicit gradients are correct and a
   second-order optimizer recovers known parameters — [Step 1](#step-1-does-training-through-the-fixed-point-work).
+- The untrained wiring says which antenna smelled an odor, from one stimulus and
+  one fixed point with nothing trained: 0.715 on odors and receptor neurons never
+  used to set its one centering scalar, against ten null seeds spanning 0.441 to
+  0.620 — [Step 11](#step-11-which-antenna-smelled-it).
 - The untrained wiring already carries taste identity to descending neurons,
   including from neurons never used in training; shuffled wiring does not —
   [Step 2a](#step-2a-can-taste-be-read-from-the-untrained-network).
@@ -1097,3 +1101,72 @@ or figures made from step 10 — is shared under CC BY-SA 4.0.
 - Glomerulus renaming and chemoreceptor co-expression, cited in step 10: Task et
   al. (2022). Chemoreceptor co-expression in *Drosophila melanogaster* olfactory
   neurons. *eLife* 11, e72599. doi:10.7554/eLife.72599
+
+## Step 11: which antenna smelled it
+
+The first task here that nothing trains. No memory box, no fitted gains — the
+only quantity estimated from data in the whole run is **one centering scalar per
+arm**, and it is estimated on calibration trials that share no odor with any test
+set. Rules and all eight verdicts were committed (`945b81b`) before the run.
+
+```sh
+uv run --project .. python ../scripts/step11_side.py          # ~85 min, 1.9 GB
+uv run --project .. python ../scripts/step11_side.py --lookup # LK-12, ~11 min
+```
+
+**The question.** Presented once with an odor reaching the two antennae at
+different concentrations, does the real wiring's lateral horn output say which
+side was stimulated more? One stimulus, one fixed point, one bit. This is not
+navigation and nothing here says the fly steers this way.
+
+**Lookups that set the design** (LK-12 in `PREDICTIONS.md`):
+
+- **The two ends need different side fields.** `somaSide` is null for every ORN;
+  `rootSide` is null for every one of the 1,929 lateral horn output neurons.
+  Step 7 met the first half of this and recorded its Q4 as not evaluable. ORN
+  side comes from `rootSide`, readout side from `somaSide`, both asserted at load.
+- **The panel is laterally unbalanced** — 410 L, 611 R, 261 neither — which tilts
+  a left-minus-right readout before any odor arrives. Balancing each receptor
+  type to `min(nL, nR)` costs **1,282 ORNs down to 804**, 402 per side. Or49b
+  falls to 3 per side, close to noise.
+- **The readout leans one way regardless of the odor**, by the size of the signal
+  itself: the statistic sat at -5.3e-2 to -6.7e-2 at every contrast including the
+  shallowest, against its own spread of 2.9e-2 to 7.4e-2. Hence the centering,
+  and hence it is estimated per arm, per contrast and per ORN set.
+- **A paired statistic was rejected.** Presenting the same odor with the gradient
+  both ways scored 1.000 at every contrast, because resetting the noise draws
+  leaves the swap as the only difference. That measures sensitivity, not a task.
+
+**Arms.** REAL; SHUF, presynaptic partners permuted, five seeds; **PERM-READ**,
+REAL's own responses with the 1,929 readout neurons relabelled into random groups
+of 967 and 962, five seeds, asking whether the anatomical sides carry the answer
+or any split would; and ORACLE, the stimulus summed by antenna, which gates the
+run — a broken harness must not be read as a fact about wiring.
+
+**Result.** Every verdict passed. At the primary contrast 1.0/0.5:
+
+| set | REAL | ten null seeds | ORACLE |
+|---|---|---|---|
+| test A, seen odors and neurons | 0.805 (0.765) | 0.415–0.580 | 1.000 |
+| test C, new odors | 0.766 (0.739) | 0.408–0.590 | 1.000 |
+| test B, new odors **and** new neurons | **0.715 (0.686)** | 0.441–0.620 | 1.000 |
+
+Accuracy decays as the gradient shallows — 0.862, 0.805, 0.715, 0.591 over
+contrasts 1.0/0.0, 1.0/0.25, 1.0/0.5, 1.0/0.8 — which an artefact need not do.
+
+**Why no comparison went VOID.** Steps 9 and 10 lost their wiring comparisons
+because a null arm could not learn, so it could not be compared. Here no arm
+trains, so an arm at chance has nothing left to fail at: chance is its answer.
+The gate moved onto a positive control instead.
+
+**Three limits, none repaired after the fact.**
+
+- **The margin is wide but the rank test is weak.** Five seeds per null give a
+  one-sided p of about 1/6, the convention step 10 used. Step 7 bought p ≈ 0.048
+  with 20 rewirings; 20 seeds here would cost about 2.8 hours and **was not run**.
+- **ORACLE scored 1.000 everywhere**, so the ceiling is the input, not the task.
+  REAL's 0.715 measures how much side information the wiring *preserves* — about
+  a third of it is lost — not something the wiring computes.
+- **Bilateral projection is not separated.** Most *Drosophila* ORNs project to
+  both antennal lobes, so the decay at shallow gradients may be the connectome's
+  pooling rather than this model's limit. LK-12 said so before the run.
